@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --deck-deep:     #9E6474;
+  --deck-deep-tab: #B98292;
+  --deck-accent:     #D98F98;
+  --deck-key-msg:  #635054;
+  --deck-footnote: #B29AA0;
+  --deck-card-head:#F8EDEF;
+  --slate-200:     #F0DFE2;
+  --slate-100:     #FBF2F3;
+  --ink-700:       #5F4E53;
+  --ink-500:       #9E838B;
+  --font-deck:     'Montserrat', 'Hanken Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+html, body { margin: 0; }
+
+/* ─── Slide canvas ─────────────────────────────────────────── */
+.slide {
+  width: 1280px; height: 720px; position: relative; overflow: hidden;
+  background: #fff; color: var(--ink-700); font-family: var(--font-deck);
+  padding: 42px 56px 52px; box-sizing: border-box;
+  display: flex; flex-direction: column;
+}
+
+/* ─── Locked chrome - DO NOT MODIFY ────────────────────────── */
+
+/* Left-edge accent tab */
+.tab {
+  position: absolute; left: 0; top: 46px;
+  width: 30px; height: 36px;
+  background: var(--deck-deep-tab);
+  border-radius: 0 6px 6px 0;
+}
+
+/* Logo - top-right, consistent with all slide templates */
+.logo {
+  position: absolute;
+  left: 1127px;
+  top: 27px;
+  z-index: 3;
+}
+.logo img { width: 120px; height: 40px; display: block; }
+
+/* Slide title */
+h1 {
+  margin: 0;
+  font-family: var(--font-deck);
+  font-weight: 700; font-size: 26px;
+  letter-spacing: .04em; text-transform: uppercase;
+  color: var(--deck-deep);
+}
+
+/* Key message line */
+.keymsg {
+  margin: 7px 0 0;
+  font-weight: 500; font-size: 15px;
+  color: var(--deck-key-msg);
+}
+
+/* Hairline separator below header */
+.hr {
+  margin: 16px 0 0;
+  height: 1px; background: var(--slate-200);
+  flex-shrink: 0;
+}
+
+/* ─── Open content zone ─────────────────────────────────────── */
+/*
+  This zone sits between the hairline and the footer.
+  Claude Design should place all slide-specific content here.
+  The content zone must follow one of three inner layouts:
+
+    .single-col   - full-width single column
+    .two-col      - 50/50 split with a vertical hairline separator
+    .three-col    - equal thirds
+
+  Font sizes, colors, and spacing must reference the CSS
+  variables defined in :root above. Do not introduce
+  hardcoded hex values or pixel sizes outside this zone.
+*/
+.content-zone {
+  margin-top: 18px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+
+  /* Default inner layout - single column.
+     Replace with .two-col or .three-col as needed. */
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Two-column layout helper */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.two-col .col {
+  padding: 0 24px;
+}
+.two-col .col:first-child {
+  padding-left: 0;
+  border-right: 1px solid var(--slate-200);
+  padding-right: 28px;
+}
+.two-col .col:last-child {
+  padding-left: 28px;
+  padding-right: 0;
+}
+
+/* Three-column layout helper */
+.three-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px;
+}
+
+/* ─── Common content patterns ───────────────────────────────── */
+/* These classes are available for use inside .content-zone */
+
+/* Section label / eyebrow */
+.eyebrow {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--deck-deep);
+  margin: 0 0 10px;
+}
+
+/* Titlebar - navy with white text, matches other templates */
+.titlebar {
+  padding: 4px 0 7px;
+  font-weight: 700; font-size: 13px;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--deck-deep);
+  border-bottom: 1px solid var(--slate-200);
+  margin-bottom: 12px;
+}
+
+/* Bullet list */
+ul { margin: 0; padding: 0; list-style: none; }
+li { position: relative; padding-left: 18px; margin-bottom: 9px; font-size: 13px; line-height: 1.5; }
+li::before {
+  content: ""; position: absolute; left: 0; top: 7px;
+  width: 6px; height: 6px; background: var(--deck-accent);
+}
+li b { color: var(--deck-deep); font-weight: 700; }
+
+/* Table */
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+td, th { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--slate-100); }
+th {
+  background: var(--deck-card-head); color: var(--deck-deep);
+  font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; font-size: 11px;
+}
+td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ─── Footnote and footer bar - DO NOT MODIFY ───────────────── */
+.footnote {
+  /* Footnote lane - in normal flow, never an overlay.
+  
+     This block is a flex sibling of the content wrapper inside .slide,
+     with flex-shrink: 0, so the content zone can only ever use the
+     height left over once this lane has taken its own. Every template
+     in this library previously declared it `position: absolute;
+     bottom: 44px` while the content wrapper ran `flex: 1` all the way
+     down to the slide's bottom padding. That put both in the same
+     vertical band with nothing reserving the lane, and any slide whose
+     content reached the bottom rendered straight through its own
+     footnotes. That is not a density-estimate failure that a better
+     heuristic would have caught: the two boxes were laid out
+     independently and could not see each other. mastery-heatmap.html
+     already did it this way and is the only template that never
+     exhibited the collision, which is what identified the pattern.
+  
+     max-height caps the lane at roughly five lines so a long footnote
+     cannot take the slide over instead. Nothing here is allowed to be
+     clipped silently: verify_render.py measures the real rendered
+     geometry of every slide and fails it rather than shipping content
+     that is present in the markup but invisible on the canvas. */
+  flex-shrink: 0; margin-top: 12px;
+  /* overflow: hidden is what makes max-height a real cap rather
+     than a suggestion. Without it the lane simply grows past the
+     cap and paints over the footer bar, which is the same defect
+     this whole change set exists to remove, moved down 40px.
+     With it, an oversized footnote block is caught as clipped
+     content by verify_render.py, which then steps the footnote
+     type down until every note fits. */
+  overflow: hidden;
+  max-height: 74px;
+  font-size: 10px; color: var(--deck-footnote); line-height: 1.4;
+}
+
+.footer-bar {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 38px; background: var(--deck-deep);
+  border-top: 2px solid var(--deck-accent);
+  display: flex; align-items: center;
+  padding: 0 56px; justify-content: space-between;
+}
+.footer-label {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: .18em; text-transform: uppercase;
+  color: rgba(255,255,255,.82);
+}
+.footer-pg {
+  font-size: 12px; font-weight: 700;
+  color: #fff; letter-spacing: .05em;
+}
+</style>
+</head>
+<body>
+  <div class="slide">
+
+    <!-- LOCKED CHROME - do not modify -->
+    <span class="tab"></span>
+    <div class="logo">
+</div>
+    <h1>{{ title }}</h1>
+    <p class="keymsg">{{ key_message }}</p>
+    <div class="hr"></div>
+    <!-- END LOCKED CHROME -->
+
+    <!-- OPEN CONTENT ZONE - Claude Design works here only -->
+    <div class="content-zone">
+      {{ content_html | safe }}
+    </div>
+    <!-- END OPEN CONTENT ZONE -->
+
+    <!-- LOCKED CHROME - do not modify -->
+    {% if footnote %}
+    <div class="footnote">{{ footnote }}</div>
+    {% endif %}
+    <div class="footer-bar">
+      <span class="footer-label">Study Guide</span>
+      <span class="footer-pg">{{ page_number }}</span>
+    </div>
+    <!-- END LOCKED CHROME -->
+
+  </div>
+</body>
+</html>

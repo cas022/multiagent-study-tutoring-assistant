@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --deck-deep:     #9E6474;
+  --deck-deep-tab: #B98292;
+  --deck-accent:     #D98F98;
+  --deck-key-msg:  #635054;
+  --deck-footnote: #B29AA0;
+  --deck-card-head:#F8EDEF;
+  --slate-200:     #F0DFE2;
+  --ink-700:       #5F4E53;
+  --font-deck:     'Montserrat', 'Hanken Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+html, body { margin: 0; }
+
+.slide {
+  width: 1280px; height: 720px; position: relative; overflow: hidden;
+  background: #fff; color: var(--ink-700); font-family: var(--font-deck);
+  padding: 42px 56px 52px; box-sizing: border-box;
+  display: flex; flex-direction: column;
+}
+
+/* ─── Locked chrome (identical to two-section.html / process-flow.html) ── */
+.tab {
+  position: absolute; left: 0; top: 46px;
+  width: 30px; height: 36px;
+  background: var(--deck-deep-tab); border-radius: 0 6px 6px 0;
+}
+.logo { position: absolute; left: 1127px; top: 27px; z-index: 3; }
+.logo img { width: 120px; height: 40px; display: block; }
+h1 {
+  margin: 0; font-family: var(--font-deck);
+  font-weight: 700; font-size: 26px;
+  letter-spacing: .04em; text-transform: uppercase; color: var(--deck-deep);
+}
+.keymsg { margin: 7px 0 0; font-weight: 500; font-size: 15px; color: var(--deck-key-msg); }
+.hr { margin: 16px 0 0; height: 1px; background: var(--slate-200); flex-shrink: 0; }
+
+/* ─── Content zone: flexible N-panel grid ─────────────────────────
+   Column/row count is computed in the body below from the number of
+   sections actually supplied (2, 3, 4, or 6 are the documented,
+   recommended counts - see layout_skill.md), not hardcoded here, so
+   this one template covers a 2-up, a 3-up, a 2x2 quadrant layout, or
+   a 3x2 layout without duplicating CSS per shape. */
+.content-zone { margin-top: 20px; flex: 1; min-height: 0; overflow: hidden; }
+.panel-grid { display: grid; height: 100%; gap: 20px 32px; }
+
+.panel { display: flex; flex-direction: column; min-height: 0; }
+
+/* Panel title - centered navy text, dark rule below. Identical to
+   two-section.html's .panel-title/.panel-rule. */
+.panel-title {
+  text-align: center;
+  font-weight: 700; font-size: 15px;
+  color: var(--deck-deep); letter-spacing: .01em;
+  text-transform: uppercase; flex-shrink: 0;
+}
+.panel-rule { margin: 6px 0 10px; height: 1px; background: var(--deck-deep-tab); flex-shrink: 0; }
+
+/* Panel body - top-anchored (flex-start), not centered: a table, a
+   bullet list, a chart, and an image placeholder are almost never
+   the same height, so every panel's content starts at the same
+   point right below its own title/rule regardless of the others'
+   height. Same trade-off/rationale as two-section.html's .panel-body. */
+.panel-body {
+  flex: 1; min-height: 0; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: flex-start;
+}
+
+/* ── Content type 1: table - same convention as two-section.html's
+   panel tables / content-grid.html's "table" quads: header row
+   centered (first column left, it holds row labels), row numbers
+   auto-generated, optional bold/grey total row. ── */
+.panel-body table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.panel-body th, .panel-body td {
+  padding: 5px 8px; text-align: center;
+  border-bottom: 1px solid var(--slate-200);
+}
+.panel-body th:first-child, .panel-body td:first-child { text-align: left; }
+.panel-body th {
+  background: var(--deck-card-head); color: var(--deck-deep);
+  font-weight: 700; font-size: 10.5px; text-transform: uppercase;
+  letter-spacing: .04em; border-bottom: 2px solid var(--slate-200);
+}
+.panel-body th.num-h { width: 22px; padding: 5px 4px; }
+.panel-body td.num {
+  width: 22px; padding: 5px 4px; text-align: center;
+  font-weight: 700; color: var(--ink-700);
+}
+.panel-body tr.total-row td {
+  background: var(--deck-card-head); font-weight: 700; color: var(--deck-deep);
+  border-top: 1px solid var(--slate-200); font-variant-numeric: tabular-nums;
+}
+
+/* ── Content type 2: bullets - identical marker/typography to
+   content-grid.html / two-section.html's bullet lists. ── */
+.panel-body ul { margin: 0; padding: 0; list-style: none; }
+.panel-body li { position: relative; padding-left: 18px; margin-bottom: 9px; font-size: 13px; line-height: 1.5; }
+.panel-body li::before {
+  content: ""; position: absolute; left: 0; top: 6px;
+  width: 6px; height: 6px; background: var(--deck-accent); border-radius: 1px;
+}
+.panel-body li b { color: var(--deck-deep); font-weight: 700; }
+
+/* ── Content type 3: chart - plain inline SVG bar chart, no
+   JavaScript/charting library, same no-JS philosophy as process-flow.html
+   (which builds its chart from absolutely-positioned HTML/CSS
+   divs instead of SVG). This template uses real SVG shapes because a
+   single-series bar chart is simple enough that plain <rect>/<text>
+   is clearer than div-stacking, and SVG scales cleanly to whatever
+   size a 2-, 3-, or 6-up grid cell gives it via viewBox, with no
+   pixel math tied to a specific panel width. Bar fill width (60% of
+   its column, 40% gap) mirrors process-flow.html's column proportion for
+   visual consistency across every chart in the deck. ── */
+.panel-body .chart-svg { flex: 1; min-height: 0; width: 100%; }
+.chart-bar { fill: var(--deck-deep); }
+.chart-baseline { stroke: var(--slate-200); stroke-width: 1; }
+.chart-value-label {
+  font-family: var(--font-deck); font-size: 11px; font-weight: 700;
+  fill: var(--deck-deep); font-variant-numeric: tabular-nums;
+}
+.chart-category-label {
+  font-family: var(--font-deck); font-size: 9.5px; font-weight: 500;
+  fill: var(--ink-700);
+}
+
+/* ── Content type 4: image placeholder - a grey box with a
+   description of what goes there, never a real image (the system
+   does not insert real images/photos/maps yet; a human pastes one in
+   later). Same box treatment as two-section.html's
+   .asset-photo/.img-placeholder, renamed generically since this
+   isn't limited to "asset photo" - a map, a site plan, a logo lockup,
+   or any other visual all use the same box. ── */
+.image-placeholder-box {
+  flex: 1; min-height: 0; border-radius: 4px;
+  background: var(--deck-card-head);
+  display: flex; align-items: center; justify-content: center;
+  padding: 12px; box-sizing: border-box; text-align: center;
+}
+.placeholder-text {
+  font-size: 11px; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--deck-footnote);
+}
+
+/* Footnote - the shared footer-note lane, same single line as
+   content-grid.html / quiz-recap.html. */
+.footnote {
+  /* Footnote lane - in normal flow, never an overlay.
+  
+     This block is a flex sibling of the content wrapper inside .slide,
+     with flex-shrink: 0, so the content zone can only ever use the
+     height left over once this lane has taken its own. Every template
+     in this library previously declared it `position: absolute;
+     bottom: 44px` while the content wrapper ran `flex: 1` all the way
+     down to the slide's bottom padding. That put both in the same
+     vertical band with nothing reserving the lane, and any slide whose
+     content reached the bottom rendered straight through its own
+     footnotes. That is not a density-estimate failure that a better
+     heuristic would have caught: the two boxes were laid out
+     independently and could not see each other. mastery-heatmap.html
+     already did it this way and is the only template that never
+     exhibited the collision, which is what identified the pattern.
+  
+     max-height caps the lane at roughly five lines so a long footnote
+     cannot take the slide over instead. Nothing here is allowed to be
+     clipped silently: verify_render.py measures the real rendered
+     geometry of every slide and fails it rather than shipping content
+     that is present in the markup but invisible on the canvas. */
+  flex-shrink: 0; margin-top: 12px;
+  /* overflow: hidden is what makes max-height a real cap rather
+     than a suggestion. Without it the lane simply grows past the
+     cap and paints over the footer bar, which is the same defect
+     this whole change set exists to remove, moved down 40px.
+     With it, an oversized footnote block is caught as clipped
+     content by verify_render.py, which then steps the footnote
+     type down until every note fits. */
+  overflow: hidden;
+  max-height: 74px;
+  font-size: 10px; color: var(--deck-footnote); line-height: 1.4;
+}
+
+/* Footer - flat navy with gold top rule, matching the majority
+   convention across the library (content-grid, quiz-recap,
+   flashcard-grid, bridge, mastery-heatmap all use a flat
+   --deck-deep bar, not two-section.html's gradient variant). */
+.footer-bar {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 38px; background: var(--deck-deep);
+  border-top: 2px solid var(--deck-accent);
+  display: flex; align-items: center; padding: 0 56px; justify-content: space-between;
+}
+.footer-label { font-size: 10px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.82); }
+.footer-pg { font-size: 12px; font-weight: 700; color: #fff; letter-spacing: .05em; }
+</style>
+</head>
+<body>
+  <div class="slide">
+
+    <!-- LOCKED CHROME -->
+    <span class="tab"></span>
+    <div class="logo">
+</div>
+    <h1>{{ title }}</h1>
+    <p class="keymsg">{{ key_message }}</p>
+    <div class="hr"></div>
+    <!-- END LOCKED CHROME -->
+
+    {#- Grid shape from section count. 2/3/4/6 are the documented,
+        recommended counts (2x1, 3x1, 2x2, 3x2); any other count still
+        renders via the generic 3-wide fallback rather than failing,
+        it just may not look as balanced - see layout_skill.md. #}
+    {%- set n = sections | length %}
+    {%- if n <= 2 %}
+      {%- set grid_cols = n if n > 0 else 1 %}
+      {%- set grid_rows = 1 %}
+    {%- elif n == 3 %}
+      {%- set grid_cols = 3 %}
+      {%- set grid_rows = 1 %}
+    {%- elif n == 4 %}
+      {%- set grid_cols = 2 %}
+      {%- set grid_rows = 2 %}
+    {%- elif n == 6 %}
+      {%- set grid_cols = 3 %}
+      {%- set grid_rows = 2 %}
+    {%- else %}
+      {%- set grid_cols = 3 %}
+      {%- set grid_rows = ((n - 1) // 3) + 1 %}
+    {%- endif %}
+
+    {%- macro render_table(section) %}
+      <table>
+        <tr>
+          <th class="num-h"></th>
+          {%- for header in section.table_headers %}
+          <th{% if not loop.first %} class="c"{% endif %}>{{ header }}</th>
+          {%- endfor %}
+        </tr>
+        {%- for row in section.table_rows %}
+        <tr>
+          <td class="num">{{ loop.index }}</td>
+          {%- for cell in row %}
+          <td{% if not loop.first %} class="c"{% endif %}>{{ cell | safe }}</td>
+          {%- endfor %}
+        </tr>
+        {%- endfor %}
+        {%- if section.table_total %}
+        <tr class="total-row">
+          <td class="num"></td>
+          {%- for cell in section.table_total %}
+          <td{% if not loop.first %} class="c"{% endif %}>{{ cell }}</td>
+          {%- endfor %}
+        </tr>
+        {%- endif %}
+      </table>
+    {%- endmacro %}
+
+    {%- macro render_bullets(section) %}
+      <ul>
+        {%- for bullet in section.bullets %}
+        <li>{{ bullet | safe }}</li>
+        {%- endfor %}
+      </ul>
+    {%- endmacro %}
+
+    {#- render_chart(): single-series vertical bar chart in plain SVG.
+        Axis max is 15% headroom above the tallest bar, computed here
+        from chart_bars - never authored by hand. Bar column width
+        (and the 60%-fill/40%-gap split) uses the same proportion as
+        process-flow.html's driver columns, just in SVG viewBox units (400
+        wide) instead of percentage-positioned divs. #}
+    {%- macro render_chart(section) %}
+      {%- set bars = section.chart_bars | default([]) %}
+      {%- set prefix = section.chart_unit_prefix | default('') %}
+      {%- set suffix = section.chart_unit_suffix | default('') %}
+      {%- set n_bars = bars | length %}
+      {%- set values = bars | map(attribute='value') | list %}
+      {%- set max_v = (values | max) * 1.15 if values and (values | max) > 0 else 1.0 %}
+      {%- set col_w = (400.0 / n_bars) if n_bars > 0 else 400.0 %}
+      <svg class="chart-svg" viewBox="0 0 400 210" preserveAspectRatio="xMidYMid meet">
+        <line class="chart-baseline" x1="0" y1="170" x2="400" y2="170" />
+        {%- for bar in bars %}
+          {%- set i = loop.index0 %}
+          {%- set bar_h = (bar.value / max_v * 150) %}
+          {%- set bar_w = col_w * 0.6 %}
+          {%- set bar_x = i * col_w + col_w * 0.2 %}
+          {%- set bar_y = 170 - bar_h %}
+          <rect class="chart-bar" x="{{ bar_x | round(1) }}" y="{{ bar_y | round(1) }}" width="{{ bar_w | round(1) }}" height="{{ bar_h | round(1) }}" />
+          <text class="chart-value-label" x="{{ (bar_x + bar_w / 2) | round(1) }}" y="{{ (bar_y - 6) | round(1) }}" text-anchor="middle">{{ prefix }}{{ "%.1f"|format(bar.value) }}{{ suffix }}</text>
+          <text class="chart-category-label" x="{{ (bar_x + bar_w / 2) | round(1) }}" y="188" text-anchor="middle">{{ bar.label }}</text>
+        {%- endfor %}
+      </svg>
+    {%- endmacro %}
+
+    {%- macro render_image_placeholder(section) %}
+      <div class="image-placeholder-box">
+        <div class="placeholder-text">{{ section.image_placeholder_text }}</div>
+      </div>
+    {%- endmacro %}
+
+    <!-- CONTENT ZONE -->
+    <div class="content-zone">
+      <div class="panel-grid" style="grid-template-columns: repeat({{ grid_cols }}, 1fr); grid-template-rows: repeat({{ grid_rows }}, 1fr);">
+        {%- for section in sections %}
+        <div class="panel">
+          <div class="panel-title">{{ section.section_title }}</div>
+          <div class="panel-rule"></div>
+          <div class="panel-body">
+            {%- if section.content_type == 'table' %}
+              {{ render_table(section) }}
+            {%- elif section.content_type == 'bullets' %}
+              {{ render_bullets(section) }}
+            {%- elif section.content_type == 'chart' %}
+              {{ render_chart(section) }}
+            {%- elif section.content_type == 'image-placeholder' %}
+              {{ render_image_placeholder(section) }}
+            {%- endif %}
+          </div>
+        </div>
+        {%- endfor %}
+      </div>
+    </div>
+    <!-- END CONTENT ZONE -->
+
+    {% if footnote %}
+    <div class="footnote">{{ footnote }}</div>
+    {% endif %}
+
+    <div class="footer-bar">
+      <span class="footer-label">Study Guide</span>
+      <span class="footer-pg">{{ page_number }}</span>
+    </div>
+
+  </div>
+</body>
+</html>

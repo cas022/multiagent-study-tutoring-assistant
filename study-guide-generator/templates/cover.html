@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --deck-deep:     #9E6474;
+  --deck-deep-tab: #B98292;
+  --deck-accent:     #D98F98;
+  --font-deck:     'Montserrat', 'Hanken Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+html, body { margin: 0; }
+
+.slide {
+  width: 1280px; height: 720px; position: relative; overflow: hidden;
+  background: var(--deck-deep);
+  font-family: var(--font-deck);
+  color: #fff;
+}
+
+/* Full-bleed desaturated infrastructure photo */
+.photo {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, #D98F98 0%, #E2B7B9 45%, #A1C9D0 100%);
+  filter: grayscale(1) contrast(1.02);
+  opacity: .42;
+}
+
+/* Navy color-block overlay - darkest top-left where the headline sits */
+.veil {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(180deg, rgba(158,100,116,.96) 0%, rgba(158,100,116,.55) 48%, rgba(158,100,116,.82) 100%),
+    linear-gradient(90deg, rgba(158,100,116,.85) 0%, rgba(158,100,116,.18) 70%);
+}
+
+.logo {
+  position: absolute; top: 52px; right: 64px; z-index: 3;
+}
+.logo img { height: 58px; display: block; }
+
+.mid {
+  position: absolute; left: 72px; top: 248px; z-index: 3; max-width: 860px;
+}
+
+h1 {
+  margin: 0;
+  font-family: var(--font-deck);
+  font-weight: 800;
+  font-size: 62px;
+  line-height: 1.02;
+  letter-spacing: .005em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.subhead {
+  margin: 18px 0 0;
+  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--deck-accent);
+}
+
+.team-block {
+  margin: 24px 0 0;
+}
+
+.team-line {
+  margin: 0 0 5px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: .04em;
+  color: rgba(255, 255, 255, .72);
+}
+
+/* Gold rule above footer */
+.rule {
+  position: absolute; left: 72px; right: 64px; bottom: 96px;
+  height: 2px; background: var(--deck-accent); z-index: 3;
+}
+
+/* Footer - deck label left, date right */
+.foot {
+  position: absolute; left: 72px; right: 64px; bottom: 56px; z-index: 3;
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .72);
+}
+</style>
+</head>
+<body>
+  <div class="slide">
+    <div class="photo"></div>
+    <div class="veil"></div>
+
+    <div class="logo">
+</div>
+
+    <div class="mid">
+      <h1>{{ title }}</h1>
+      <p class="subhead">{{ subtitle }}</p>
+      <div class="team-block">
+        <p class="team-line">{{ course_line }}</p>
+        <p class="team-line">{{ scope_line }}</p>
+        <p class="team-line">{{ prepared_for_line }}</p>
+      </div>
+    </div>
+
+    <div class="rule"></div>
+
+    <div class="foot">
+      <span>Study Guide</span>
+      <span>{{ date_line }}</span>
+    </div>
+  </div>
+</body>
+</html>

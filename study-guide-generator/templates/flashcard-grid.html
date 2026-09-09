@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --deck-deep:     #9E6474;
+  --deck-deep-tab: #B98292;
+  --deck-accent:   #D98F98;
+  --deck-key-msg:  #635054;
+  --deck-footnote: #B29AA0;
+  --slate-200:     #F0DFE2;
+  --slate-050:     #FDF8F8;
+  --blush:         #FDCECE;
+  --ink-700:       #5F4E53;
+  --font-deck:     'Montserrat', 'Hanken Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+html, body { margin: 0; }
+
+.slide {
+  width: 1280px; height: 720px; position: relative; overflow: hidden;
+  background: #fff; color: var(--ink-700); font-family: var(--font-deck);
+  padding: 42px 56px 52px; box-sizing: border-box;
+  display: flex; flex-direction: column;
+}
+
+/* LOCKED CHROME - identical geometry to every other template in this
+   library. Do not restyle here. */
+.tab { position: absolute; left: 0; top: 46px; width: 30px; height: 36px;
+       background: var(--deck-deep-tab); border-radius: 0 6px 6px 0; }
+h1 { margin: 0; font-family: var(--font-deck); font-weight: 700; font-size: 26px;
+     letter-spacing: .04em; text-transform: uppercase; color: var(--deck-deep); }
+.keymsg { margin: 7px 0 0; font-weight: 500; font-size: 15px; color: var(--deck-key-msg); }
+.hr { margin: 16px 0 0; height: 1px; background: var(--slate-200); flex-shrink: 0; }
+.content-zone { margin-top: 18px; flex: 1; min-height: 0; overflow: hidden;
+                display: flex; flex-direction: column; gap: 14px; }
+
+.section { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.section-title {
+  font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--deck-deep-tab); margin-bottom: 8px; flex-shrink: 0;
+}
+
+/* Three across is the readable maximum at this canvas width. The grid
+   auto-fills, so a section with four cards lays out 3 + 1 rather than
+   squeezing four into a row and dropping the type size. */
+.cards {
+  flex: 1; min-height: 0;
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 1fr;   /* rows share the section height instead of
+                            packing to the top and leaving the lower
+                            half of the slide empty */
+  gap: 12px; align-content: stretch;
+}
+
+/* The card reads front-first: the term or question is the heavier
+   element, the answer sits under a hairline. That ordering is the whole
+   point of the format - a student should be able to cover the lower half
+   and self-test. */
+.card {
+  border: 1px solid var(--slate-200); border-radius: 5px;
+  border-top: 3px solid var(--deck-accent);
+  background: var(--slate-050);
+  padding: 10px 13px 9px; box-sizing: border-box;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.card-front {
+  font-size: 12.5px; font-weight: 700; color: var(--deck-deep); line-height: 1.3;
+}
+.card-rule { height: 1px; background: var(--slate-200); margin: 7px 0 6px; flex-shrink: 0; }
+.card-back { font-size: 11.5px; line-height: 1.42; color: var(--ink-700); flex: 1; }
+.card-meta {
+  margin-top: 7px; display: flex; gap: 6px; align-items: center; flex-shrink: 0;
+}
+.tag {
+  font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  background: var(--blush); color: #A84B50; border-radius: 8px; padding: 2px 7px;
+}
+.source { font-size: 9.5px; color: var(--deck-footnote); }
+
+.footnote { flex-shrink: 0; margin-top: 12px; overflow: hidden; max-height: 74px;
+            font-size: 10px; color: var(--deck-footnote); line-height: 1.4; }
+.footnote-line { margin: 0 0 3px; }
+.fnwrap { column-gap: 26px; }
+
+.page-num { position: absolute; right: 56px; bottom: 22px;
+            font-size: 10px; color: var(--deck-footnote); }
+</style>
+</head>
+<body>
+  <div class="slide">
+
+    <!-- LOCKED CHROME -->
+    <span class="tab"></span>
+    <h1>{{ title }}</h1>
+    <p class="keymsg">{{ key_message }}</p>
+    <div class="hr"></div>
+    <!-- END LOCKED CHROME -->
+
+    <div class="content-zone">
+      {%- for s in sections %}
+      <div class="section">
+        {%- if s.section_title %}
+        <div class="section-title">{{ s.section_title }}</div>
+        {%- endif %}
+        <div class="cards">
+          {%- for c in s.cards %}
+          <div class="card">
+            <div class="card-front">{{ c.front }}</div>
+            <div class="card-rule"></div>
+            <div class="card-back">{{ c.back }}</div>
+            {%- if c.tag or c.source %}
+            <div class="card-meta">
+              {%- if c.tag %}<span class="tag">{{ c.tag }}</span>{% endif %}
+              {%- if c.source %}<span class="source">{{ c.source }}</span>{% endif %}
+            </div>
+            {%- endif %}
+          </div>
+          {%- endfor %}
+        </div>
+      </div>
+      {%- endfor %}
+    </div>
+
+    {%- if footnotes %}
+    <div class="footnote">
+      {%- set fn_cols = 2 if footnotes | length >= 3 else 1 %}
+      <div class="fnwrap" style="column-count: {{ fn_cols }};">
+        {%- for f in footnotes %}
+        <p class="footnote-line">{{ f }}</p>
+        {%- endfor %}
+      </div>
+    </div>
+    {%- endif %}
+
+    <div class="page-num">{{ page_number }}</div>
+  </div>
+</body>
+</html>

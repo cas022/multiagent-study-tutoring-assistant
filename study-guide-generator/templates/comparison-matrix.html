@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --deck-deep:     #9E6474;
+  --deck-deep-tab: #B98292;
+  --deck-accent:     #D98F98;
+  --deck-key-msg:  #635054;
+  --deck-footnote: #B29AA0;
+  --deck-card-head:#F8EDEF;
+  --slate-200:     #F0DFE2;
+  --slate-100:     #FBF2F3;
+  --ink-700:       #5F4E53;
+  --ink-500:       #9E838B;
+  --font-deck:     'Montserrat', 'Hanken Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+html, body { margin: 0; }
+
+.slide {
+  width: 1280px; height: 720px; position: relative; overflow: hidden;
+  background: #fff; color: var(--ink-700); font-family: var(--font-deck);
+  padding: 42px 56px 52px; box-sizing: border-box;
+  display: flex; flex-direction: column;
+}
+
+/* ─── Locked chrome (identical to quiz-recap.html /
+   flashcard-grid.html) ─────────────────────────────────── */
+.tab {
+  position: absolute; left: 0; top: 46px;
+  width: 30px; height: 36px;
+  background: var(--deck-deep-tab); border-radius: 0 6px 6px 0;
+}
+.logo { position: absolute; left: 1127px; top: 27px; z-index: 3; }
+.logo img { width: 120px; height: 40px; display: block; }
+h1 {
+  margin: 0; font-family: var(--font-deck);
+  font-weight: 700; font-size: 26px;
+  letter-spacing: .04em; text-transform: uppercase; color: var(--deck-deep);
+}
+.keymsg { margin: 7px 0 0; font-weight: 500; font-size: 15px; color: var(--deck-key-msg); }
+.hr { margin: 16px 0 0; height: 1px; background: var(--slate-200); flex-shrink: 0; }
+
+/* ─── Content zone ──────────────────────────── */
+.content-zone {
+  margin-top: 18px; flex: 1; min-height: 0; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+/* Table - width-fixed columns (predictable widths regardless of
+   cell content), but row HEIGHT is deliberately left to the browser
+   (no fixed row height anywhere below): a cell with one short label
+   and a cell with a 3-level bullet list sit in different rows, and
+   each row must grow to fit its own tallest cell, not a uniform
+   height shared by every row. table-layout:fixed only pins COLUMN
+   widths - it has no effect on row height, so this is compatible
+   with variable-height rows. */
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.col-no { width: 24px; }
+
+/* Main header - dark navy fill, white text, same institutional
+   header convention as mastery-heatmap.html's <thead>. */
+thead tr.main-header th {
+  background: var(--deck-deep); color: #fff;
+  font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  text-align: left; vertical-align: middle;
+  padding: var(--tbl-pad-v, 6px) var(--tbl-pad-h, 9px);
+}
+thead tr.main-header th.col-no { text-align: center; }
+
+/* Optional letter-header row (A, B, C...) - light grey, sits above
+   the main header. Only rendered when show_letter_header is true;
+   most slides won't need it, same "optional, off by default" spirit
+   as flashcard-grid.html's section_title bands. */
+thead tr.letter-header th {
+  background: var(--deck-card-head); color: var(--deck-deep);
+  font-weight: 700; text-align: center;
+  padding: 4px 9px; font-size: .85em;
+  border-bottom: 1px solid var(--slate-200);
+}
+
+tbody td {
+  border-bottom: 1px solid var(--slate-100);
+  vertical-align: top; line-height: 1.38;
+  padding: var(--tbl-pad-v, 6px) var(--tbl-pad-h, 9px);
+}
+tbody tr:nth-child(even):not(.group-band-row) td { background: #FDF8F8; }
+
+.no {
+  font-variant-numeric: tabular-nums; color: var(--ink-500);
+  font-weight: 700; text-align: center; vertical-align: top;
+}
+
+/* Group band - full-width bold divider row, optional (only rendered
+   when a group's group_label is set). Same role as
+   flashcard-grid.html's section band: a genuine topic
+   shift (e.g. "Federal" grouping the permits below it), not a
+   header for every group. */
+tr.group-band-row td {
+  background: var(--deck-card-head); color: var(--deck-deep);
+  font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  padding: var(--tbl-pad-v, 6px) var(--tbl-pad-h, 9px);
+}
+
+/* Plain text cell - raw string content, HTML-safe (bold allowed). */
+.cell-text { color: var(--ink-700); }
+
+/* Hierarchical bullets inside a cell: level 1 = lower-alpha (a, b,
+   c...), level 2 = lower-roman (i, ii, iii...). Same counter-based
+   auto-lettering approach as contents.html's ol.sub and
+   topic-checklist.html's ol.lettered, just two levels deep here. */
+ol.cell-lvl1 {
+  margin: 0; padding: 0; list-style: none; counter-reset: lvl1-counter;
+}
+ol.cell-lvl1 > li {
+  counter-increment: lvl1-counter;
+  position: relative; padding-left: 15px;
+  margin-bottom: 3px;
+}
+ol.cell-lvl1 > li:last-child { margin-bottom: 0; }
+ol.cell-lvl1 > li::before {
+  content: counter(lvl1-counter, lower-alpha) ".";
+  position: absolute; left: 0; top: 0;
+  font-weight: 700; color: var(--deck-deep);
+}
+ol.cell-lvl2 {
+  margin: 3px 0 3px 0; padding: 0; list-style: none; counter-reset: lvl2-counter;
+}
+ol.cell-lvl2 > li {
+  counter-increment: lvl2-counter;
+  position: relative; padding-left: 16px;
+  margin-bottom: 2px;
+}
+ol.cell-lvl2 > li:last-child { margin-bottom: 0; }
+ol.cell-lvl2 > li::before {
+  content: counter(lvl2-counter, lower-roman) ".";
+  position: absolute; left: 0; top: 0;
+  color: var(--ink-500);
+}
+.cell-text b, ol.cell-lvl1 b, ol.cell-lvl2 b { color: var(--deck-deep); font-weight: 700; }
+
+/* Density scaling - same continuous-not-bucketed philosophy as
+   quiz-recap.html, adapted for cells that can each hold a
+   different amount of content (a short label vs. a 3-bullet
+   paragraph) instead of one value per cell, AND width-aware: the
+   solve_font()/cell_lines() macros in the body below estimate actual
+   wrapped-line counts from each column's real pixel width, not just
+   a character-count tier blind to column width. An earlier version
+   of this template used a flat per-character tier with no width
+   awareness at all, which under-counted long text in narrow columns
+   and caused real overflow - this is the fix for that, not a
+   cosmetic change.
+
+   It is still an ESTIMATE, and it is no longer the only check. This
+   comment previously read "there is no Playwright pass available to
+   verify this against actual rendered height." There is one now:
+   scripts/verify_render.py loads every rendered slide in headless
+   Chromium at the real 1280x720 canvas, measures what actually
+   happened, and re-renders at a smaller step when this estimate came
+   out wrong. The estimate's job is to land close enough that the
+   measured pass usually agrees on the first try, not to be right on
+   its own. */
+table { font-size: var(--tbl-font, 10.5px); }
+
+/* Footnotes - identical to quiz-recap.html / flashcard-grid.html. */
+.footnotes {
+  /* Footnote lane - in normal flow, never an overlay.
+  
+     This block is a flex sibling of the content wrapper inside .slide,
+     with flex-shrink: 0, so the content zone can only ever use the
+     height left over once this lane has taken its own. Every template
+     in this library previously declared it `position: absolute;
+     bottom: 44px` while the content wrapper ran `flex: 1` all the way
+     down to the slide's bottom padding. That put both in the same
+     vertical band with nothing reserving the lane, and any slide whose
+     content reached the bottom rendered straight through its own
+     footnotes. That is not a density-estimate failure that a better
+     heuristic would have caught: the two boxes were laid out
+     independently and could not see each other. mastery-heatmap.html
+     already did it this way and is the only template that never
+     exhibited the collision, which is what identified the pattern.
+  
+     max-height caps the lane so a long footnote block cannot take the
+     slide over instead; the cap here is the taller one used by the
+     templates that carry a numbered footnote LIST rather than a single
+     line, and the list is set in columns (see .footnotes ol below) so
+     it fits inside that cap. Nothing here is allowed to be
+     clipped silently: verify_render.py measures the real rendered
+     geometry of every slide and fails it rather than shipping content
+     that is present in the markup but invisible on the canvas. */
+  flex-shrink: 0; margin-top: 12px;
+  /* overflow: hidden is what makes max-height a real cap rather
+     than a suggestion. Without it the lane simply grows past the
+     cap and paints over the footer bar, which is the same defect
+     this whole change set exists to remove, moved down 40px.
+     With it, an oversized footnote block is caught as clipped
+     content by verify_render.py, which then steps the footnote
+     type down until every note fits. */
+  overflow: hidden;
+  max-height: 130px;
+  font-size: 10px; color: var(--deck-footnote); line-height: 1.4;
+}
+.footnotes ol {
+  /* Multi-column footnote lane.
+
+     This is a line-length decision, not a fitting one, and the
+     distinction is worth stating because the opposite is easy to
+     assume: setting the same notes in three columns does NOT make the
+     block shorter. It produces three times as many wrapped lines, each
+     a third as long, and lands at the same height. What it changes is
+     that a footnote runs about 70 characters to the line instead of
+     220, which is the difference between a readable note and a line
+     the eye loses its place in at 10px across a 1168px slide. It is
+     also how the reference slide this library is modelled on sets its
+     own footnotes: a band of short columns, not one full-width stack.
+
+     Height is handled by the lane's max-height and by the reserve the
+     density solve subtracts, both sized for the stacked-line count.
+
+     column-count is set inline per slide from the actual footnote
+     count, since two notes across three columns reads as a layout
+     accident rather than a design. break-inside: avoid keeps a single
+     note from being split across a column boundary mid-sentence. */
+  margin: 0; padding-left: 16px;
+  column-gap: 26px;
+}
+.footnotes li { break-inside: avoid; margin-bottom: 2px; }
+
+/* ─── Footer (identical to the rest of the library) ─────────── */
+.footer-bar {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 38px; background: var(--deck-deep);
+  border-top: 2px solid var(--deck-accent);
+  display: flex; align-items: center; padding: 0 56px; justify-content: space-between;
+}
+.footer-label { font-size: 10px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.82); }
+.footer-pg { font-size: 12px; font-weight: 700; color: #fff; letter-spacing: .05em; }
+</style>
+</head>
+<body>
+  <div class="slide">
+
+    <!-- LOCKED CHROME -->
+    <span class="tab"></span>
+    <div class="logo">
+</div>
+    <h1>{{ title }}</h1>
+    <p class="keymsg">{{ key_message }}</p>
+    <div class="hr"></div>
+    <!-- END LOCKED CHROME -->
+
+    {#- render_cell(): dispatches a cell to either the hierarchical
+        bullet renderer or plain HTML-safe text - the same is-it-a-
+        mapping-with-bullets check cell_lines() uses below, so the
+        two never disagree about what kind of cell they're looking
+        at. #}
+    {%- macro render_cell(cell) %}
+      {%- if cell is mapping and cell.bullets is defined %}
+        <ol class="cell-lvl1">
+          {%- for b in cell.bullets %}
+          <li>{{ b.text | safe }}
+            {%- if b.sub_bullets %}
+            <ol class="cell-lvl2">
+              {%- for sb in b.sub_bullets %}
+              <li>{{ sb | safe }}</li>
+              {%- endfor %}
+            </ol>
+            {%- endif %}
+          </li>
+          {%- endfor %}
+        </ol>
+      {%- else %}
+        <span class="cell-text">{{ cell | safe }}</span>
+      {%- endif %}
+    {%- endmacro %}
+
+    {#- Column width shares: proportional, per quiz-recap's
+        category/scenario precedent, generalized to N arbitrary
+        weights instead of a fixed 2-vs-1 split. column_widths is
+        optional - omit it (or leave every entry equal) for even
+        columns, the sensible default when no column is known to
+        need more room than the others. #}
+    {#- A plain `{% set %}` inside a `{% for %}` does not survive the loop
+        in Jinja - the assignment is scoped to the loop body, so the
+        equal-width fallback silently produced an empty list and the
+        first `widths[0]` lookup then failed with "list object has no
+        element 0". A namespace is the supported way to accumulate
+        across a loop, so the fallback is built on one. #}
+    {%- set wns = namespace(list=column_widths | default([]) or []) %}
+    {%- if wns.list | length != columns | length %}
+      {%- set wns.list = [] %}
+      {%- for c in columns %}{%- set wns.list = wns.list + [1] %}{%- endfor %}
+    {%- endif %}
+    {%- set widths = wns.list %}
+    {%- set total_shares = widths | sum %}
+
+    {#- Pixel width per column - used ONLY to estimate wrapped-line
+        counts below, not as the actual CSS width (that's the % share
+        above). 112px = the slide's own left+right padding; 24px =
+        the row-number column. This is the piece the earlier version
+        of this template was missing entirely: it costed a bullet's
+        length in the abstract, with no idea whether that bullet sat
+        in a 120px column or a 400px one, so a long bullet in a
+        narrow column (which wraps to many more lines than the same
+        bullet in a wide one) was silently under-counted - the direct
+        cause of the overflow this rewrite fixes. #}
+    {%- set table_width_px = 1280 - 112 - 24 %}
+    {%- set cwp = namespace(list=[]) %}
+    {%- for c in columns %}
+      {%- set cwp.list = cwp.list + [(widths[loop.index0] / total_shares) * table_width_px] %}
+    {%- endfor %}
+    {%- set col_width_px = cwp.list %}
+
+    {#- lines_for(): estimated wrapped-line count for one string at a
+        given characters-per-line figure. cpl comes from cell_lines()
+        below, which derives it from the column's actual pixel width
+        - this is what makes the estimate width-aware. #}
+    {%- macro lines_for(text, cpl) %}
+      {%- set n = (text | string | length) %}
+      {{- ([1, (n / cpl) | round(0, 'ceil')] | max) -}}
+    {%- endmacro %}
+
+    {#- cell_lines(): estimated total wrapped lines for one cell at a
+        given assumed font size. Converts the column's pixel width
+        into characters-per-line via a ~0.52x-font-size average
+        character width (a standard heuristic for a proportional
+        sans-serif at this weight) - deliberately an estimate, since
+        there's no Playwright pass available to measure the real
+        rendered width. Sub-bullets get ~16px less usable width than
+        the top level (their own indent); each bullet/sub-bullet also
+        adds a small +0.15/+0.12 line-equivalent for its own
+        margin-bottom spacing, which is real vertical space the pure
+        line count would otherwise miss. #}
+    {%- macro cell_lines(cell, cw_px, font_px) %}
+      {%- set char_w = font_px * 0.52 %}
+      {%- set cpl = [8, ((cw_px - 18) / char_w)] | max %}
+      {%- set cpl_sub = [8, ((cw_px - 34) / char_w)] | max %}
+      {%- if cell is mapping and cell.bullets is defined %}
+        {%- set w = namespace(total=0.0) %}
+        {%- for b in cell.bullets %}
+          {%- set w.total = w.total + (lines_for(b.text, cpl) | float) + 0.15 %}
+          {%- for sb in (b.sub_bullets | default([])) %}
+            {%- set w.total = w.total + (lines_for(sb, cpl_sub) | float) + 0.12 %}
+          {%- endfor %}
+        {%- endfor %}
+        {{- w.total -}}
+      {%- else %}
+        {{- lines_for(cell, cpl) -}}
+      {%- endif %}
+    {%- endmacro %}
+
+    {#- solve_font(): one pass of the density solve at a given
+        assumed font size (needed because characters-per-line itself
+        depends on font size - a small circularity). Runs twice below
+        - pass 1 with an assumed 10px to get a first estimate, pass 2
+        re-estimating line counts with pass 1's result for a closer
+        final answer. Two passes converge close enough in practice;
+        a third would move the result by hundredths of a pixel.
+
+        Budget: each row's rendered height ≈ font_px * (line_count *
+        1.38 [line-height] + 1.1 [top+bottom padding, since
+        tbl_pad_v = font*0.55]). Summed across every row - data rows
+        (width-aware line count) plus the main header, the optional
+        letter header, and each group band (treated as one
+        line-equivalent each, since those are short single-line
+        labels, not paragraph cells) - and set equal to the
+        content-zone budget, solved for font_px.
+
+        The budget is 480px of chrome-free height (the same
+        calibration source as quiz-recap.html's identical
+        chrome and margins) LESS whatever the footnote lane takes.
+        That subtraction is new. The lane now sits in normal flow
+        rather than as an absolute overlay (see the .footnote rule
+        above), so its height is genuinely unavailable to the table
+        instead of being space the table could quietly render over.
+        The old budget assumed all 480px regardless of how many
+        footnotes a slide carried, which is precisely the assumption
+        that let a full table and a two-line source note claim the
+        same 20px. Reserve is estimated at 10px/1.4 line-height over
+        an ~1168px lane width, plus the lane's own 12px top margin,
+        and capped at the CSS max-height so this can never subtract
+        more than the lane can actually occupy.
+
+        This remains an estimate, and it is no longer the last word:
+        verify_render.py measures the rendered result and re-renders
+        at a smaller step if the estimate was wrong. The estimate's
+        job is to land close enough that the measured pass usually
+        agrees on the first try. #}
+    {%- macro solve_font(assumed_font) %}
+      {%- set acc = namespace(total_lines=0.0, n_rows=0) %}
+      {%- for group in groups %}
+        {%- if group.group_label %}
+          {%- set acc.total_lines = acc.total_lines + 1.0 %}
+          {%- set acc.n_rows = acc.n_rows + 1 %}
+        {%- endif %}
+        {%- for row in group.rows %}
+          {%- set row_max = namespace(v=0.0) %}
+          {%- for cell in row.cells %}
+            {%- set cl = cell_lines(cell, col_width_px[loop.index0], assumed_font) | float %}
+            {%- if cl > row_max.v %}{%- set row_max.v = cl %}{%- endif %}
+          {%- endfor %}
+          {%- set acc.total_lines = acc.total_lines + row_max.v %}
+          {%- set acc.n_rows = acc.n_rows + 1 %}
+        {%- endfor %}
+      {%- endfor %}
+      {%- set acc.total_lines = acc.total_lines + 1.0 %}
+      {%- set acc.n_rows = acc.n_rows + 1 %}
+      {%- if show_letter_header %}
+        {%- set acc.total_lines = acc.total_lines + 1.0 %}
+        {%- set acc.n_rows = acc.n_rows + 1 %}
+      {%- endif %}
+      {%- set fn = namespace(chars=0) %}
+      {%- for note in (footnotes | default([])) %}
+        {%- set fn.chars = fn.chars + (note | string | length) + 4 %}
+      {%- endfor %}
+      {#- Lines here means STACKED lines, which is what costs height.
+          That figure does not depend on how many columns the notes are
+          set in: three columns produce three times as many wrapped
+          lines, each a third as long, and the block ends up the same
+          height. Columns are a line-length decision, not a fitting
+          one. #}
+      {%- set fn_lines = ((fn.chars / 224) | round(0, 'ceil')) %}
+      {%- set fn_reserve = 0 if fn.chars == 0 else [142, (12 + fn_lines * 14)] | min %}
+      {%- set budget_px = 480 - fn_reserve %}
+      {{- budget_px / (1.38 * acc.total_lines + 1.1 * acc.n_rows) -}}
+    {%- endmacro %}
+
+    {%- set font_pass1 = solve_font(10) | float %}
+    {%- set font_pass2 = solve_font(font_pass1) | float %}
+    {%- set tbl_font = font_pass2 %}
+    {%- if tbl_font > 12 %}
+      {%- set tbl_font = 12 %}
+    {%- elif tbl_font < 8 %}
+      {%- set tbl_font = 8 %}
+    {%- endif %}
+    {%- set tbl_font = tbl_font | round(1) %}
+    {%- set tbl_pad_v = (tbl_font * 0.55) | round(1) %}
+    {%- set tbl_pad_h = (tbl_font * 0.85) | round(1) %}
+
+    {%- set ns = namespace(row_num=0) %}
+
+    <!-- CONTENT ZONE -->
+    <div class="content-zone">
+      <table style="--tbl-font: {{ tbl_font }}px; --tbl-pad-v: {{ tbl_pad_v }}px; --tbl-pad-h: {{ tbl_pad_h }}px;">
+        <thead>
+          {%- if show_letter_header %}
+          <tr class="letter-header">
+            <th class="col-no"></th>
+            {%- set ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" %}
+            {%- for col in columns %}
+            <th style="width: {{ ((widths[loop.index0] / total_shares) * 100) | round(2) }}%;">{{ ALPHA[loop.index0] }}</th>
+            {%- endfor %}
+          </tr>
+          {%- endif %}
+          <tr class="main-header">
+            <th class="col-no"></th>
+            {%- for col in columns %}
+            <th style="width: {{ ((widths[loop.index0] / total_shares) * 100) | round(2) }}%;">{{ col }}</th>
+            {%- endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {%- for group in groups %}
+            {%- if group.group_label %}
+            <tr class="group-band-row">
+              <td class="no"></td>
+              <td colspan="{{ columns | length }}">{{ group.group_label }}</td>
+            </tr>
+            {%- endif %}
+            {%- for row in group.rows %}
+            {%- set ns.row_num = ns.row_num + 1 %}
+            <tr>
+              <td class="no">{{ ns.row_num }}</td>
+              {%- for cell in row.cells %}
+              <td>{{ render_cell(cell) }}</td>
+              {%- endfor %}
+            </tr>
+            {%- endfor %}
+          {%- endfor %}
+        </tbody>
+      </table>
+    </div>
+    <!-- END CONTENT ZONE -->
+
+    <!-- LOCKED CHROME -->
+    {% if footnotes %}
+    {%- set fn_cols = 3 if (footnotes | length) >= 6 else (2 if (footnotes | length) >= 3 else 1) %}
+    <div class="footnotes">
+      <ol style="column-count: {{ fn_cols }};">
+        {% for note in footnotes %}
+        <li>{{ note }}</li>
+        {% endfor %}
+      </ol>
+    </div>
+    {% endif %}
+    <div class="footer-bar">
+      <span class="footer-label">Study Guide</span>
+      <span class="footer-pg">{{ page_number }}</span>
+    </div>
+    <!-- END LOCKED CHROME -->
+
+  </div>
+</body>
+</html>

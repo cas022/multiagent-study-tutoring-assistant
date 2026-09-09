@@ -1,0 +1,16 @@
+{
+  "name": "student-note-taker",
+  "version": "1.0.0",
+  "description": "Student Note Taker agent for the Multiagent Study & Tutoring Assistant. Transforms already-fetched lecture content (a Zoom AI summary and/or personal notes fetched by the Study Manager, or a pasted transcript/file) into structured lecture notes. Does not search Zoom or resolve ambiguous recording matches itself - that is the Study Manager's job.",
+  "author": {
+    "name": "Camila Serrano"
+  },
+  "keywords": [
+    "notes",
+    "lecture",
+    "zoom",
+    "study",
+    "education",
+    "transcript"
+  ]
+}

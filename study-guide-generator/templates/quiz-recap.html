@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --deck-deep:     #9E6474;
+  --deck-deep-tab: #B98292;
+  --deck-accent:     #D98F98;
+  --deck-key-msg:  #635054;
+  --deck-footnote: #B29AA0;
+  --deck-card-head:#F8EDEF;
+  --slate-200:     #F0DFE2;
+  --slate-100:     #FBF2F3;
+  --ink-700:       #5F4E53;
+  --ink-500:       #9E838B;
+  --font-deck:     'Montserrat', 'Hanken Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+html, body { margin: 0; }
+
+.slide {
+  width: 1280px; height: 720px; position: relative; overflow: hidden;
+  background: #fff; color: var(--ink-700); font-family: var(--font-deck);
+  padding: 42px 56px 52px; box-sizing: border-box;
+  display: flex; flex-direction: column;
+}
+
+/* ─── Locked chrome ─────────────────────────── */
+.tab {
+  position: absolute; left: 0; top: 46px;
+  width: 30px; height: 36px;
+  background: var(--deck-deep-tab); border-radius: 0 6px 6px 0;
+}
+.logo { position: absolute; left: 1127px; top: 27px; z-index: 3; }
+.logo img { width: 120px; height: 40px; display: block; }
+h1 {
+  margin: 0; font-family: var(--font-deck);
+  font-weight: 700; font-size: 26px;
+  letter-spacing: .04em; text-transform: uppercase; color: var(--deck-deep);
+}
+.keymsg { margin: 7px 0 0; font-weight: 500; font-size: 15px; color: var(--deck-key-msg); }
+.hr { margin: 16px 0 0; height: 1px; background: var(--slate-200); flex-shrink: 0; }
+
+/* ─── Content zone ──────────────────────────── */
+.content-zone {
+  margin-top: 22px; flex: 1; min-height: 0; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+/* Table */
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+
+/* col-no is a small fixed width; col-question and each column
+   column get their width as an inline style computed in the body
+   below (category = 2 shares, each column column = 1 share, out
+   of columns|length + 2 total shares) - this guarantees the question column
+   is always exactly 2x the width of any single column column, no
+   matter how many columns there are. A static px value here would
+   only look right for one specific column count: with 3 columns
+   sharing the leftover space evenly, a fixed 260px question column ends up
+   NARROWER than each ~294px column column, not wider. */
+.col-no { width: 26px; }
+
+/* Scenario header - grey institutional placeholder box, not a
+   filled navy bar, per the "empty/grey header slot" spec. Font
+   size and padding come from the density tier below, not here. */
+thead th.column-head {
+  background: var(--deck-card-head); color: var(--deck-deep);
+  font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase;
+  text-align: center; vertical-align: middle;
+  border: 1px solid #fff;
+  border-bottom: 2px solid var(--slate-200);
+}
+thead th.col-no, thead th.col-question { border: none; }
+
+tbody td {
+  border-bottom: 1px solid var(--slate-100);
+  vertical-align: middle; line-height: 1.3;
+}
+/* :not(.summary-row) so the zebra stripe never outranks the summary
+   row's navy background - tbody tr:nth-child(even) td has higher
+   specificity (3 type selectors) than tr.summary-row td (2 type + 1
+   class), so without this exclusion an even-positioned summary row's
+   background silently loses to the stripe while its white text still
+   wins (text has no competing rule), leaving white-on-light text. */
+tbody tr:nth-child(even):not(.summary-row) td { background: #FDF8F8; }
+
+.no {
+  font-variant-numeric: tabular-nums; color: var(--ink-500);
+  font-weight: 700; text-align: center;
+}
+.question { font-weight: 700; color: var(--deck-deep); }
+.value { font-style: italic; color: var(--ink-700); text-align: center; }
+
+/* Summary row - visually distinct band, bold values, same font
+   size/padding tier as the rest of the table (never larger - see
+   Adjustment 3 from the quiz-recap.html review). Optional: it
+   renders only where `summary_label` and `summary_values` are both
+   supplied, and it is the only row permitted after the table's RETURNS
+   section. Where they are absent the table simply ends on its last body
+   row. */
+tr.summary-row td {
+  background: var(--deck-deep); color: #fff;
+  border-bottom: none;
+}
+tr.summary-row td.value {
+  font-style: normal; font-weight: 800;
+  color: #fff; text-align: center; font-variant-numeric: tabular-nums;
+}
+
+/* Density scaling - the slide canvas is a fixed 1280x720px (PPTX
+   export contract), so the table can't grow taller than its
+   allotted space. font-size and cell padding are computed
+   CONTINUOUSLY from the real row count in the template body below
+   (via CSS custom properties set as an inline style on <table>),
+   not picked from a small number of fixed buckets. A bucketed
+   version of this shipped first and caused two symptoms that are
+   really the same root cause: a low row count (e.g. 7) landed in
+   the bucket sized for its bucket's WORST case (up to 10 rows) and
+   never got to use the leftover vertical space, reading as too
+   cramped; a mid count (e.g. 24) landed in a bucket sized for ITS
+   worst case (up to 26) and left a visible gap of unused space
+   below the table. Computing directly from the exact row count
+   fixes both without separate patches. Falls back to the 9px/5px/8px
+   defaults below if a variable is somehow missing.
+   Bounds: 7px floor (legibility), 12px ceiling (stays proportionate
+   to the rest of the deck's body type - cover/keymsg text tops out
+   around 13-15px; a table shouldn't out-size that just because a
+   slide happens to be short on rows). */
+table { font-size: var(--tbl-font, 9px); }
+thead th.column-head,
+tbody td { padding: var(--tbl-pad-v, 5px) var(--tbl-pad-h, 8px); }
+
+/* Footnotes - numbered, small text, in the shared footer-note lane
+   every template in this library uses. */
+.footnotes {
+  /* Footnote lane - in normal flow, never an overlay.
+  
+     This block is a flex sibling of the content wrapper inside .slide,
+     with flex-shrink: 0, so the content zone can only ever use the
+     height left over once this lane has taken its own. Every template
+     in this library previously declared it `position: absolute;
+     bottom: 44px` while the content wrapper ran `flex: 1` all the way
+     down to the slide's bottom padding. That put both in the same
+     vertical band with nothing reserving the lane, and any slide whose
+     content reached the bottom rendered straight through its own
+     footnotes. That is not a density-estimate failure that a better
+     heuristic would have caught: the two boxes were laid out
+     independently and could not see each other. mastery-heatmap.html
+     already did it this way and is the only template that never
+     exhibited the collision, which is what identified the pattern.
+  
+     max-height caps the lane so a long footnote block cannot take the
+     slide over instead; the cap here is the taller one used by the
+     templates that carry a numbered footnote LIST rather than a single
+     line, and the list is set in columns (see .footnotes ol below) so
+     it fits inside that cap. Nothing here is allowed to be
+     clipped silently: verify_render.py measures the real rendered
+     geometry of every slide and fails it rather than shipping content
+     that is present in the markup but invisible on the canvas. */
+  flex-shrink: 0; margin-top: 12px;
+  /* overflow: hidden is what makes max-height a real cap rather
+     than a suggestion. Without it the lane simply grows past the
+     cap and paints over the footer bar, which is the same defect
+     this whole change set exists to remove, moved down 40px.
+     With it, an oversized footnote block is caught as clipped
+     content by verify_render.py, which then steps the footnote
+     type down until every note fits. */
+  overflow: hidden;
+  max-height: 130px;
+  font-size: 10px; color: var(--deck-footnote); line-height: 1.4;
+}
+.footnotes ol {
+  /* Multi-column footnote lane.
+
+     This is a line-length decision, not a fitting one, and the
+     distinction is worth stating because the opposite is easy to
+     assume: setting the same notes in three columns does NOT make the
+     block shorter. It produces three times as many wrapped lines, each
+     a third as long, and lands at the same height. What it changes is
+     that a footnote runs about 70 characters to the line instead of
+     220, which is the difference between a readable note and a line
+     the eye loses its place in at 10px across a 1168px slide. It is
+     also how the reference slide this library is modelled on sets its
+     own footnotes: a band of short columns, not one full-width stack.
+
+     Height is handled by the lane's max-height and by the reserve the
+     density solve subtracts, both sized for the stacked-line count.
+
+     column-count is set inline per slide from the actual footnote
+     count, since two notes across three columns reads as a layout
+     accident rather than a design. break-inside: avoid keeps a single
+     note from being split across a column boundary mid-sentence. */
+  margin: 0; padding-left: 16px;
+  column-gap: 26px;
+}
+.footnotes li { break-inside: avoid; margin-bottom: 2px; }
+
+/* ─── Footer ───────────────────────────────── */
+.footer-bar {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 38px; background: var(--deck-deep);
+  border-top: 2px solid var(--deck-accent);
+  display: flex; align-items: center; padding: 0 56px; justify-content: space-between;
+}
+.footer-label { font-size: 10px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.82); }
+.footer-pg { font-size: 12px; font-weight: 700; color: #fff; letter-spacing: .05em; }
+</style>
+</head>
+<body>
+  <div class="slide">
+
+    <!-- LOCKED CHROME -->
+    <span class="tab"></span>
+    <div class="logo">
+</div>
+    <h1>{{ title }}</h1>
+    <p class="keymsg">{{ key_message }}</p>
+    <div class="hr"></div>
+    <!-- END LOCKED CHROME -->
+
+    <!-- CONTENT ZONE -->
+    <div class="content-zone">
+
+      {#- Continuous density calculation - see the CSS comment above
+          the table{font-size:...} rule for the reasoning. Solves for
+          a font size that makes (row_count + ~1.5 for header/summary,
+          or ~0.75 for the header alone where the optional summary row
+          is absent) rows fill a target budget, then clamps to a 7-12px
+          range so
+          a low-row-count slide doesn't blow up into a cartoonishly
+          large, deck-inconsistent font just because it has the
+          vertical room. Padding scales proportionally with the
+          resulting font size instead of being picked separately.
+
+          The budget is 480px of chrome-free height LESS whatever the
+          footnote lane takes. That subtraction is new. The 480px
+          figure was previously described as carrying a safety margin
+          so "a multi-line footnote never collides with the last
+          row" - a margin, not a reservation, and it did not hold,
+          because the footnote lane was an absolute overlay that the
+          table could render straight through no matter what the
+          budget said. The lane now sits in normal flow (see the
+          .footnotes rule above), so its height is genuinely
+          unavailable rather than notionally avoided. Reserve is
+          estimated at 10px/1.4 line-height over an ~1168px lane
+          width, plus the lane's 12px top margin, capped at the CSS
+          max-height.
+
+          This remains an estimate. verify_render.py measures the
+          rendered result and re-renders at a smaller step if the
+          estimate was wrong. #}
+      {%- set fn = namespace(chars=0) %}
+      {%- for note in (footnotes | default([])) %}
+        {%- set fn.chars = fn.chars + (note | string | length) + 4 %}
+      {%- endfor %}
+      {#- Lines here means STACKED lines, which is what costs height.
+          That figure does not depend on how many columns the notes are
+          set in: three columns produce three times as many wrapped
+          lines, each a third as long, and the block ends up the same
+          height. Columns are a line-length decision, not a fitting
+          one. #}
+      {%- set fn_lines = ((fn.chars / 224) | round(0, 'ceil')) %}
+      {%- set fn_reserve = 0 if fn.chars == 0 else [142, (12 + fn_lines * 14)] | min %}
+      {#- The summary row is optional, and only ever renders as a PAIR:
+          a label with no values (or values with no label) is a
+          half-written row, so it renders as no row at all rather than
+          as a navy band with empty cells. A deck with no one-line
+          verdict per case omits both fields; nothing is invented to
+          fill the row.
+
+          The row count the density scaling divides by has to follow.
+          The 1.5 covers two non-body rows, the thead row and the
+          summary row, at roughly 0.75 of a body row each; with no
+          summary row there is one such extra, so the allowance halves.
+          Leaving it at 1.5 would size the type for a row that is not
+          there and leave a visible gap under the table, which is the
+          bucketing failure the CSS comment above describes. #}
+      {%- set has_summary = true if (summary_label and summary_values) else false %}
+      {%- set effective_rows = rows|length + (1.5 if has_summary else 0.75) %}
+      {%- set row_height = (480 - fn_reserve) / effective_rows %}
+      {%- set tbl_font = row_height / 2.3 %}
+      {%- if tbl_font > 12 %}
+        {%- set tbl_font = 12 %}
+      {%- elif tbl_font < 7 %}
+        {%- set tbl_font = 7 %}
+      {%- endif %}
+      {%- set tbl_font = tbl_font | round(1) %}
+      {%- set tbl_pad_v = (tbl_font * 0.5) | round(1) %}
+      {%- set tbl_pad_h = (tbl_font * 0.85) | round(1) %}
+
+      {#- Column width shares: the question column always gets 2 shares, each
+          column column gets 1 share, out of (columns|length + 2)
+          total. This keeps the question column exactly 2x any single answer column
+          column's width for any column count, instead of a static
+          px value that only looks right at one specific count. #}
+      {%- set total_shares = columns|length + 2 %}
+      {%- set question_pct = (200 / total_shares) | round(2) %}
+      {%- set column_pct = (100 / total_shares) | round(2) %}
+
+      <table style="--tbl-font: {{ tbl_font }}px; --tbl-pad-v: {{ tbl_pad_v }}px; --tbl-pad-h: {{ tbl_pad_h }}px;">
+        <thead>
+          <tr>
+            <th class="col-no"></th>
+            <th class="col-question" style="width: {{ question_pct }}%;"></th>
+            {% for column in columns %}
+            <th class="column-head" style="width: {{ column_pct }}%;">{{ column }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td class="no">{{ loop.index }}</td>
+            <td class="question">{{ row.question }}</td>
+            {% for cell in row['values'] %}
+            <td class="value">{{ cell }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+          {% if has_summary %}
+          <tr class="summary-row">
+            <td class="no"></td>
+            <td class="question">{{ summary_label }}</td>
+            {% for cell in summary_values %}
+            <td class="value">{{ cell }}</td>
+            {% endfor %}
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+
+    </div>
+    <!-- END CONTENT ZONE -->
+
+    <!-- LOCKED CHROME -->
+    {% if footnotes %}
+    {%- set fn_cols = 3 if (footnotes | length) >= 6 else (2 if (footnotes | length) >= 3 else 1) %}
+    <div class="footnotes">
+      <ol style="column-count: {{ fn_cols }};">
+        {% for note in footnotes %}
+        <li>{{ note }}</li>
+        {% endfor %}
+      </ol>
+    </div>
+    {% endif %}
+    <div class="footer-bar">
+      <span class="footer-label">Study Guide</span>
+      <span class="footer-pg">{{ page_number }}</span>
+    </div>
+    <!-- END LOCKED CHROME -->
+
+  </div>
+</body>
+</html>

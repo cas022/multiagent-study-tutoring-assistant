@@ -1,0 +1,17 @@
+{
+  "name": "concept-researcher",
+  "version": "1.0.0",
+  "description": "Concept Researcher agent for the Multiagent Study & Tutoring Assistant. Runs external research on concepts the course material does not itself explain, at two depths: a single search-backed answer (fast_search) or a full multi-source pipeline ending in a cited .docx brief (research). Ranks sources by a six-level academic authority ladder rather than by model judgment. Does not decompose queries - sub-queries are written and approved before this agent is called.",
+  "author": {
+    "name": "Camila Serrano"
+  },
+  "keywords": [
+    "research",
+    "study",
+    "education",
+    "citations",
+    "source-quality",
+    "perplexity",
+    "firecrawl"
+  ]
+}

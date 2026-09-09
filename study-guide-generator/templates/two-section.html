@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --deck-deep:     #9E6474;
+  --deck-deep-tab: #B98292;
+  --deck-accent:     #D98F98;
+  --deck-key-msg:  #635054;
+  --deck-footnote: #B29AA0;
+  --deck-card-head:#F8EDEF;
+  --slate-200:     #F0DFE2;
+  --ink-700:       #5F4E53;
+  --font-deck:     'Montserrat', 'Hanken Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+html, body { margin: 0; }
+
+.slide {
+  width: 1280px; height: 720px; position: relative; overflow: hidden;
+  background: #fff; color: var(--ink-700); font-family: var(--font-deck);
+  padding: 42px 56px 52px; box-sizing: border-box;
+  display: flex; flex-direction: column;
+}
+
+.tab {
+  position: absolute; left: 0; top: 46px;
+  width: 30px; height: 36px;
+  background: var(--deck-deep-tab);
+  border-radius: 0 6px 6px 0;
+}
+
+.logo {
+  position: absolute; left: 1127px; top: 27px; z-index: 3;
+}
+.logo img { width: 120px; height: 40px; display: block; }
+
+h1 {
+  margin: 0;
+  font-family: var(--font-deck);
+  font-weight: 700; font-size: 26px;
+  letter-spacing: .04em; text-transform: uppercase;
+  color: var(--deck-deep);
+}
+
+.keymsg {
+  margin: 7px 0 0;
+  font-weight: 500; font-size: 15px;
+  color: var(--deck-key-msg);
+}
+
+.hr {
+  margin: 16px 0 0;
+  height: 1px; background: var(--slate-200);
+}
+
+/* Two-column body */
+.body-grid {
+  margin-top: 20px; flex: 1;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 40px; min-height: 0;
+}
+
+.panel {
+  display: flex; flex-direction: column; min-height: 0;
+}
+
+/* Panel title - centered navy text, dark rule below */
+.panel-title {
+  text-align: center;
+  font-weight: 700; font-size: 17px;
+  color: var(--deck-deep); letter-spacing: .01em;
+}
+.panel-rule {
+  margin: 8px 0 12px;
+  height: 1px; background: var(--deck-deep-tab);
+}
+
+/* Panel body - everything below the title/rule. Anchored to the top
+   (flex-start) so BOTH panels' content starts at the same height
+   right below their own title/rule, regardless of how tall each
+   panel's content actually is - a table and a bullet list are
+   almost never the same height, so centering each independently (an
+   earlier fix for a different complaint - dead space between short
+   content and the footer) made them start at two different points
+   and put empty space above both. Top-anchoring is a straight
+   trade-off: it can leave space at the BOTTOM when content is short,
+   but that reads as far less wrong than a floating, misaligned start. */
+.panel-body {
+  flex: 1; min-height: 0; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: flex-start;
+}
+
+/* Data table inside a panel (left_content/right_content raw HTML) -
+   header row centered, and every data column centered to match, per
+   the quiz-recap.html convention. The first column holds row
+   labels (e.g. "Acquisition price"), which read naturally left-
+   aligned, same distinction quiz-recap.html makes between its
+   .category column and its .value columns. */
+.panel-body table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.panel-body th, .panel-body td {
+  padding: 5px 10px; text-align: center;
+  border-bottom: 1px solid var(--slate-200);
+}
+.panel-body th:first-child, .panel-body td:first-child { text-align: left; }
+.panel-body th {
+  background: var(--deck-card-head); color: var(--deck-deep);
+  font-weight: 700; font-size: 11px; text-transform: uppercase;
+  letter-spacing: .04em; border-bottom: 2px solid var(--slate-200);
+}
+
+/* Row-number column - the same treatment content-grid.html and
+   multi-panel.html use, provided here so a table authored into
+   left_content/right_content can be enumerated the way every other
+   table in the deck is.
+
+   This template cannot inject the numbers itself: its two content
+   zones take raw HTML, so the <table> is written by whoever authors
+   the slide, not generated from structured rows. The classes below
+   are the contract for that author. Every table on a two_section
+   slide carries a leading unlabeled `<th class="num-h">` in its
+   header row and a `<td class="num">` holding the row's number in
+   each body row, numbered continuously from 1. Section 3 of the
+   Design Brief states the same requirement for slides Claude Design
+   builds, so a built table and a rendered one match. */
+.panel-body th.num-h { width: 24px; padding: 5px 4px; text-align: center; }
+.panel-body td.num {
+  width: 24px; padding: 5px 4px; text-align: center;
+  font-weight: 700; color: var(--ink-700);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Content zone typography ── */
+.titlebar {
+  padding: 4px 0 7px;
+  font-weight: 700; font-size: 13px;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--deck-deep);
+  border-bottom: 1px solid var(--slate-200);
+  margin-bottom: 12px; margin-top: 14px;
+}
+.titlebar:first-child { margin-top: 0; }
+
+ul { margin: 0; padding: 0; list-style: none; }
+li { position: relative; padding-left: 18px; margin-bottom: 9px; font-size: 13px; line-height: 1.5; }
+li::before {
+  content: ""; position: absolute; left: 0; top: 6px;
+  width: 6px; height: 6px; background: var(--deck-accent); border-radius: 1px;
+}
+li b { color: var(--deck-deep); font-weight: 700; }
+
+/* ── Right panel: single asset photo ── */
+.asset-photo {
+  flex: 1; min-height: 0;
+  position: relative; overflow: hidden;
+  border-radius: 4px;
+}
+.asset-photo img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+}
+.asset-photo .img-placeholder {
+  width: 100%; height: 100%;
+  background: var(--deck-card-head);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--deck-footnote);
+}
+
+/* Footnote - narrower than the full slide width (was left:56px;
+   right:56px, spanning ~1168px - lines that long at 10px are hard to
+   read). Constraining the width makes long footnote text wrap into
+   shorter, more readable lines without needing to touch the text
+   itself; the block still grows upward from its bottom anchor as
+   needed, so longer notes just take more lines, never overflow. */
+.footnote {
+  /* Footnote lane - in normal flow, never an overlay.
+  
+     This block is a flex sibling of the content wrapper inside .slide,
+     with flex-shrink: 0, so the content zone can only ever use the
+     height left over once this lane has taken its own. Every template
+     in this library previously declared it `position: absolute;
+     bottom: 44px` while the content wrapper ran `flex: 1` all the way
+     down to the slide's bottom padding. That put both in the same
+     vertical band with nothing reserving the lane, and any slide whose
+     content reached the bottom rendered straight through its own
+     footnotes. That is not a density-estimate failure that a better
+     heuristic would have caught: the two boxes were laid out
+     independently and could not see each other. mastery-heatmap.html
+     already did it this way and is the only template that never
+     exhibited the collision, which is what identified the pattern.
+  
+     max-height caps the lane at roughly five lines so a long footnote
+     cannot take the slide over instead. Nothing here is allowed to be
+     clipped silently: verify_render.py measures the real rendered
+     geometry of every slide and fails it rather than shipping content
+     that is present in the markup but invisible on the canvas. */
+  flex-shrink: 0; margin-top: 12px;
+  /* overflow: hidden is what makes max-height a real cap rather
+     than a suggestion. Without it the lane simply grows past the
+     cap and paints over the footer bar, which is the same defect
+     this whole change set exists to remove, moved down 40px.
+     With it, an oversized footnote block is caught as clipped
+     content by verify_render.py, which then steps the footnote
+     type down until every note fits. */
+  overflow: hidden;
+  max-height: 74px;
+  max-width: 720px;
+  font-size: 10px; color: var(--deck-footnote); line-height: 1.5;
+}
+
+/* Dark footer bar - gradient from navy to navy-tab, gold top rule */
+.footer-bar {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 38px;
+  background: linear-gradient(90deg, var(--deck-deep) 0%, var(--deck-deep-tab) 55%);
+  border-top: 2px solid var(--deck-accent);
+  display: flex; align-items: center;
+  padding: 0 56px; justify-content: space-between;
+}
+.footer-label {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: .18em; text-transform: uppercase;
+  color: rgba(255,255,255,.82);
+}
+.footer-pg {
+  font-size: 12px; font-weight: 700;
+  color: #fff; letter-spacing: .05em;
+}
+</style>
+</head>
+<body>
+  <div class="slide">
+    <span class="tab"></span>
+
+    <div class="logo">
+</div>
+
+    <h1>{{ title }}</h1>
+    <p class="keymsg">{{ key_message }}</p>
+    <div class="hr"></div>
+
+    <div class="body-grid">
+
+      <!-- LEFT PANEL -->
+      <div class="panel">
+        <div class="panel-title">{{ left_title }}</div>
+        <div class="panel-rule"></div>
+        <div class="panel-body">
+          {{ left_content | safe }}
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div class="panel">
+        <div class="panel-title">{{ right_title }}</div>
+        <div class="panel-rule"></div>
+
+        <div class="panel-body">
+          {% if right_content %}
+          {{ right_content | safe }}
+          {% else %}
+          <div class="asset-photo">
+            {% if right_image and right_image.src %}
+            <img src="{{ right_image.src }}" alt="{{ right_image.alt }}" />
+            {% else %}
+            <div class="img-placeholder">{{ right_image.placeholder if right_image else 'Asset Photo' }}</div>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+
+    {% if footnote %}
+    <div class="footnote">{{ footnote }}</div>
+    {% endif %}
+
+    <div class="footer-bar">
+      <span class="footer-label">Study Guide</span>
+      <span class="footer-pg">{{ page_number }}</span>
+    </div>
+
+  </div>
+</body>
+</html>

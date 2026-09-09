@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<!-- Disables the browser/webview heuristic that auto-links bare
+     numbers as if they were phone numbers - the ID column's plain
+     digits (1, 2, 3...) were rendering blue and underlined with no
+     such rule anywhere in this file's own CSS, which is the
+     signature of that auto-detection, not a real link or a color
+     bug in the stylesheet below. -->
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --color-ink:        #8A5566;
+  --color-deep:       #B0808C;
+  --color-deep-dark:  #7A4A57;
+  --color-blue:        #4E8A96;
+  --color-accent:        #D98F98;
+  --color-paper:       #FDF4F4;
+  --color-white:       #FFFFFF;
+  --color-muted:       #CFAAB2;
+  --color-border:      #F3E7E9;
+  --color-burgundy:    #8A3A4E;
+
+  /* Title / key-message / footnote - exact values from
+     content-grid.html (the approved executive-summary template),
+     so this template's header and footnote read identically to
+     the rest of the deck rather than using this template's own
+     --color-ink/--color-deep-dark/--color-muted tones, which are
+     close but not pixel-equal. */
+  --deck-deep:     #9E6474;
+  --deck-key-msg:  #635054;
+  --deck-footnote: #B29AA0;
+
+  /* Single font stack, Montserrat first - matches every other
+     sibling template (quiz-recap.html, flashcard-grid.html,
+     process-flow.html all use --font-deck: 'Montserrat'...). This template
+     previously used a separate serif (Spectral) for the key-message,
+     which read as visually inconsistent with the rest of the deck;
+     --font-serif is gone, everything here uses --font-sans now. */
+  --font-sans: 'Montserrat', 'Hanken Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+  /* Status badge colors, per "Heat Maps Manual V1.1": Planned = dark
+     blue, In Progress = light blue, Done = green, Delayed = red,
+     Cancelled = grey. 2 of these (Planned, Cancelled) reuse
+     --color-blue/--color-muted; the other 3 are new tokens, still
+     defined as named variables rather than inline hex. */
+  --status-notstarted: var(--color-muted);
+  --status-reviewing:  #6EACB7;
+  --status-practiced:  #A1C9D0;
+  --status-confident:  #3F8A6E;
+  --status-struggling: #C0575C;
+  --status-lastupdate: var(--color-accent);
+}
+
+html, body { margin: 0; }
+
+.slide {
+  width: 1280px; height: 720px; position: relative; overflow: hidden;
+  background: var(--color-white); color: var(--color-ink);
+  font-family: var(--font-sans); box-sizing: border-box;
+}
+
+/* ─── Locked chrome ─────────────────────────── */
+/* Left accent tab - same geometry as every other approved template's
+   .tab (30x36px navy rectangle at the top-left edge), replacing the
+   4px full-height gold accent-bar this template used before, which
+   didn't match anything else in the deck. */
+.tab {
+  position: absolute; left: 0; top: 46px;
+  width: 30px; height: 36px;
+  background: var(--color-deep-dark); border-radius: 0 6px 6px 0;
+  z-index: 3;
+}
+
+/* Logo - top-right, same size/position as every other template
+   (was top-left at 28px tall here, which read as small/misaligned
+   next to the rest of the deck). Positioned relative to .slide, not
+   .chrome-inset, so it sits independently of the content flow below. */
+.logo { position: absolute; left: 1127px; top: 27px; z-index: 3; }
+.logo img { width: 120px; height: 40px; display: block; }
+
+.chrome-inset {
+  /* bottom clears the 40px footer bar (38px + its 2px top rule) with
+     8px of breathing room. At the previous 28px the footnote lane
+     rendered underneath the bar. */
+  position: absolute; left: 36px; top: 20px; right: 36px; bottom: 48px;
+  display: flex; flex-direction: column;
+}
+
+/* Title first, key-message below - same h1/.keymsg pattern and
+   values as content-grid.html (executive-summary): big bold
+   uppercase navy title, normal-weight grey key-message underneath.
+   Previously reversed (small grey label above a large title-sized
+   key-message), which read backwards next to the rest of the deck. */
+h1 {
+  margin: 10px 0 0; font-family: var(--font-sans);
+  font-weight: 700; font-size: 26px;
+  letter-spacing: .04em; text-transform: uppercase;
+  color: var(--deck-deep);
+  flex-shrink: 0;
+}
+
+.keymsg {
+  margin: 7px 0 0; font-family: var(--font-sans);
+  font-weight: 500; font-size: 15px; color: var(--deck-key-msg);
+  flex-shrink: 0;
+}
+
+/* Section header band - course name + assessment and its date,
+   directly below the title per the manual's required header. */
+.section-header-band {
+  margin-top: 10px; background: var(--color-paper);
+  padding: 6px 16px; font-family: var(--font-sans);
+  font-size: 9px; color: var(--color-muted); flex-shrink: 0;
+}
+
+/* Content zone - the heatmap table */
+.content-zone { margin-top: 8px; flex: 1; min-height: 0; overflow: hidden; }
+
+table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 9.5px; }
+
+/* Column order: ID leads, Topic second - and that is deliberate.
+   The original layout puts the tracked item first, and this deck has since
+   overridden the manual on this point, so the ID column comes first in
+   the deck as shipped. Anyone reading the manual alongside this file
+   will see the two disagree: the manual is the older statement and this
+   template is correct. Do not "restore" Topic-first thinking the
+   current order is a regression.
+
+   Widths still total 100%. ID takes 4% rather than the 3% it had while
+   sitting second: as the leading column it carries the header word "ID"
+   and, in the empty-topics placeholder row, the string "TBD", and
+   3% (about 36px less 14px of padding) left neither with room. The 1%
+   comes off Topic, the widest column and the one least hurt by it. */
+.col-id       { width: 4%; }
+.col-topic{ width: 23%; }
+.col-lead     { width: 9%; }
+.col-status   { width: 8%; }
+.col-origdue  { width: 8%; }
+.col-lastdue  { width: 8%; }
+.col-currdue  { width: 8%; }
+.col-delaylast{ width: 6%; }
+.col-delayorig{ width: 6%; }
+.col-deliv    { width: 20%; }
+
+thead th {
+  background: var(--color-deep-dark); color: var(--color-white);
+  font-family: var(--font-sans); font-size: 7.5px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .06em;
+  text-align: left; padding: 6px 7px;
+}
+thead th.num { text-align: center; }
+
+tbody td {
+  padding: 4px 7px; color: var(--color-ink); font-family: var(--font-sans);
+  font-size: 9.5px; border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+tbody tr:nth-child(even) td { background: var(--color-paper); }
+tbody tr:nth-child(odd) td  { background: var(--color-white); }
+
+/* "Heat Map Reviewed and Updated" row - always first, styled
+   distinctly from ordinary topic rows. */
+tr.last-update-row td {
+  background: var(--color-paper); font-weight: 600;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.topic-cell { font-weight: 500; }
+
+/* Status - plain colored text, not a pill/badge (same reversal
+   already applied to the summary row treatment: the
+   color itself carries the meaning, no filled background). The 5
+   status colors are unchanged, just applied to text color instead
+   of a background. */
+.status-text {
+  font-family: var(--font-sans); font-size: 9.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em;
+  white-space: nowrap;
+}
+.status-Not-started { color: var(--status-notstarted); }
+.status-Reviewing   { color: var(--status-reviewing); }
+.status-Practiced   { color: var(--status-practiced); }
+.status-Confident   { color: var(--status-confident); }
+.status-Struggling  { color: var(--status-struggling); }
+.status-LastUpdate  { color: var(--status-lastupdate); }
+
+/* Delay columns - burgundy bold if slipping (>0 days), muted
+   otherwise (on schedule, ahead, or not computable). */
+.delay-positive { color: var(--color-burgundy); font-weight: 700; }
+.delay-neutral  { color: var(--color-muted); }
+td.num { text-align: center; font-variant-numeric: tabular-nums; color: var(--color-ink); }
+/* Belt-and-suspenders: if a browser's format-detection heuristic
+   still wraps a bare number in its own <a> despite the meta tag
+   above, force it to read as plain text instead of a link. */
+td.num a { color: inherit; text-decoration: none; }
+
+/* Same size/color/weight as content-grid.html's .footnote - plain
+   small grey text, not italic. Previously 8px italic muted-grey
+   with a forced single-line ellipsis, which read as a different,
+   smaller-emphasis style than the rest of the deck. */
+.footnotes {
+  /* Footnote lane - in normal flow, never an overlay, same pattern as
+     every other content template in this library.
+
+     This block previously declared only margin-top and flex-shrink. It
+     reserved its own space, which is why the content zone never
+     rendered through it, but with no max-height and no overflow rule
+     the lane itself could grow without limit: a long source note simply
+     pushed past the slide's 720px and was cut off by
+     .slide { overflow: hidden }, painting through the footer bar on the
+     way. A real deck shipped a heatmap whose source note ended
+     mid-sentence at the bottom edge.
+
+     verify_render.py could not catch it either. The gate measures
+     whether a chrome box clips its OWN content; an uncapped lane never
+     does, because it grows instead. The cap below is what turns silent
+     overflow into a measurable clip, at which point the gate steps the
+     lane's type down until every note fits and fails the slide if it
+     still does not at the floor.
+
+     font-size lives here rather than on .footnote-line for the same
+     reason: the gate's type stepper writes
+     .footnote, .footnotes { font-size: Npx }, and a size declared on the
+     more specific child would override it, so the shrink would measure
+     as applied while changing nothing on the canvas. */
+  margin-top: 4px; flex-shrink: 0;
+  overflow: hidden;
+  max-height: 96px;
+  font-size: 10px; color: var(--deck-footnote); line-height: 1.4;
+}
+.footnote-line {
+  font-family: var(--font-sans); font-size: inherit; font-style: normal;
+  color: inherit; line-height: inherit; margin: 0;
+}
+
+/* ─── Footer bar - same .footer-bar/.footer-label/.footer-pg
+   pattern and values as content-grid.html: dark bar with a thin
+   gold top rule, "Study Guide" left, page
+   number right. Previously a plain grey-on-dark bar with no gold
+   rule and different copy ("Study guide · review tracker
+   Group"), which didn't match the rest of the deck. ───────────── */
+.footer-bar {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 38px; background: var(--color-deep-dark);
+  border-top: 2px solid var(--color-accent);
+  display: flex; align-items: center;
+  padding: 0 56px; justify-content: space-between;
+  box-sizing: border-box; z-index: 2;
+}
+.footer-label {
+  font-family: var(--font-sans); font-size: 10px; font-weight: 600;
+  letter-spacing: .18em; text-transform: uppercase;
+  color: rgba(255,255,255,.82);
+}
+.footer-pg {
+  font-family: var(--font-sans); font-size: 12px; font-weight: 700;
+  color: #fff; letter-spacing: .05em;
+}
+</style>
+</head>
+<body>
+  <div class="slide">
+    <span class="tab"></span>
+    <div class="logo">
+</div>
+
+    <div class="chrome-inset">
+      <!-- LOCKED CHROME -->
+      <h1>{{ title }}</h1>
+      <p class="keymsg">{{ key_message }}</p>
+      <!-- END LOCKED CHROME -->
+
+      <div class="section-header-band">
+        {{ course_name }} &middot; {{ assessment_name }}: {{ assessment_date }}
+      </div>
+
+      {#- Truncate at 10 rows - legibility ceiling; the manual's "typically
+          6-10" is guidance, not a hard cap the template enforces by
+          rejecting more, so anything beyond 10 is dropped from the
+          visible table and surfaced as a footnote instead, never silently. #}
+      {%- set all_topics = topics | default([]) %}
+      {%- set shown_topics = all_topics[:10] %}
+      {%- set truncated_count = (all_topics | length - 10) if (all_topics | length > 10) else 0 %}
+
+      {#- status_class(): "In Progress" -> "In-Progress" so it forms a
+          valid single CSS class token - the space in the raw value
+          can't be used directly as a class name. #}
+      {%- macro status_class(status) -%}
+        status-{{ status | replace(' ', '-') }}
+      {%- endmacro %}
+
+      {#- date_serial(): a plain day count for one date string, or the
+          empty string when the value is not a date at all ("TBD",
+          "Not tracked", blank, a quarter label). Subtracting two serials
+          gives the number of days between them, which is all the two
+          delay columns need.
+
+          Why this is done in the template rather than through the
+          days_between() Jinja global: days_between only accepts
+          DD-MMM-YY, DD-MMM-YYYY and YYYY-MM-DD. Real workplan trackers
+          also hand us DD/MM/YYYY, which real exports do,
+          and a date the parser cannot read is indistinguishable here
+          from a date nobody tracked - which is exactly the confusion
+          the fallback below has to resolve. Parsing in one place, with
+          one placeholder rule, keeps "is this a real date" and "how far
+          apart are these two dates" from ever disagreeing. The global
+          is still registered by render_slide.py; this template no
+          longer calls it.
+
+          Accepted separators are "-", "/", "." and space, so
+          17-Aug-26, 17/08/2026, 17.08.2026, 2026-08-17 and 17 Aug 2026
+          all parse. Month may be a number or a three-letter name.
+          Two-digit years follow strptime's %y rule (00-68 -> 20xx,
+          69-99 -> 19xx). Numeric dates are read DAY FIRST, matching
+          the DD-MMM-YY house format; a first field above 12 with a
+          second field of 12 or under is swapped, so an unambiguous
+          US-ordered date still parses rather than falling through to
+          the not-a-date branch. A month above 12 or a day above 31
+          returns empty rather than a wrong number. The day is bounded
+          at 31 only, not at the real length of its month: 30-Feb-26
+          therefore parses (as 2 March) rather than being rejected,
+          which keeps the stated date visible in the cell instead of
+          being replaced by the current-date fallback below.
+
+          The arithmetic is the standard Julian-day-number formula,
+          which needs only integer division - Jinja has no date type,
+          but it does have `//`. #}
+      {%- macro date_serial(value) -%}
+        {%- set s = (value | default('') | string) | trim -%}
+        {%- set parts = s.replace('/', '-').replace('.', '-').replace(' ', '-').split('-') | select | list -%}
+        {%- if (s | lower) not in ['tbd', 'tba', 'n/a', 'na', 'none', 'not tracked', 'not stated', 'unknown', '-', '&ndash;', '&mdash;'] and parts | length == 3 -%}
+          {%- set months = {'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+                            'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12} -%}
+          {%- set iso = (parts[0] | length == 4) -%}
+          {%- if iso -%}
+            {%- set d_raw = parts[2] -%}{%- set m_raw = parts[1] -%}{%- set y_raw = parts[0] -%}
+          {%- else -%}
+            {%- set d_raw = parts[0] -%}{%- set m_raw = parts[1] -%}{%- set y_raw = parts[2] -%}
+          {%- endif -%}
+          {%- set m_key = (m_raw | lower)[:3] -%}
+          {%- set m0 = months[m_key] if m_key in months else (m_raw | int(default=0)) -%}
+          {%- set d0 = d_raw | int(default=0) -%}
+          {%- set y0 = y_raw | int(default=0) -%}
+          {#- Day/month swap for an unambiguously month-first numeric date
+              (08/17/2026). Never applied to the ISO form, whose field
+              order is not in doubt: a month of 13 there is a bad date and
+              must fail, not be silently reinterpreted as a day. -#}
+          {%- set d = d0 if (iso or m0 <= 12) else (m0 if d0 <= 12 else 0) -%}
+          {%- set m = m0 if (iso or m0 <= 12) else (d0 if d0 <= 12 else 0) -%}
+          {%- set y = (2000 + y0) if y0 < 69 else ((1900 + y0) if y0 < 100 else y0) -%}
+          {%- if m >= 1 and m <= 12 and d >= 1 and d <= 31 and y >= 1900 -%}
+            {%- set a = (14 - m) // 12 -%}
+            {%- set yy = y + 4800 - a -%}
+            {%- set mm = m + 12 * a - 3 -%}
+            {{- d + ((153 * mm + 2) // 5) + 365 * yy + (yy // 4) - (yy // 100) + (yy // 400) - 32045 -}}
+          {%- endif -%}
+        {%- endif -%}
+      {%- endmacro %}
+
+      {#- delay_cell(): Delay Since Last / Delay Since Original are
+          NEVER authored by hand - always computed from the row's own
+          dates (see the topic loop below, which does the
+          subtraction) and passed in here as a day count. Renders "TBD"
+          rather than a number when `days` is none, which happens only
+          where the CURRENT due date itself is not a real date and there
+          is therefore nothing to measure against. A missing original or
+          last due date no longer produces TBD: it resolves to the
+          current date and the delay computes as 0. #}
+      {%- macro delay_cell(col_class, days) %}
+        {%- if days is none %}
+        <td class="{{ col_class }} num delay-neutral">TBD</td>
+        {%- else %}
+        <td class="{{ col_class }} num {{ 'delay-positive' if days > 0 else 'delay-neutral' }}">{{ days }}</td>
+        {%- endif %}
+      {%- endmacro %}
+
+      <div class="content-zone">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-id num">ID</th>
+              <th class="col-topic">Topic</th>
+              <th class="col-lead">Source</th>
+              <th class="col-status">Status</th>
+              <th class="col-origdue">First Covered</th>
+              <th class="col-lastdue">Last Reviewed</th>
+              <th class="col-currdue">Next Review</th>
+              <th class="col-delaylast num">Review Gap (days)</th>
+              <th class="col-delayorig num">Days Since First Seen</th>
+              <th class="col-deliv">Resource</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- "Heat Map Reviewed and Updated" - always first, never a
+                 real topic. Neither delay column is computed for
+                 this row: it's a review event, not a tracked topic
+                 with a review schedule to slip against, so both delay cells are
+                 dashes ("not applicable"), not a number. -->
+            <tr class="last-update-row">
+              <td class="col-id num">&ndash;</td>
+              <td class="col-topic topic-cell">Mastery Reviewed and Updated</td>
+              <td class="col-lead">{{ last_review.reviewed_by }}</td>
+              <td class="col-status"><span class="status-text status-LastUpdate">Last Update</span></td>
+              <td class="col-origdue">&ndash;</td>
+              <td class="col-lastdue">{{ last_review.last_reviewed }}</td>
+              <td class="col-currdue">{{ last_review.next_review }}</td>
+              <td class="col-delaylast num">&ndash;</td>
+              <td class="col-delayorig num">&ndash;</td>
+              <td class="col-deliv">&ndash;</td>
+            </tr>
+
+            {%- if shown_topics %}
+              {%- for m in shown_topics %}
+              {#- Date fallback, topic rows only.
+
+                  Most review logs record only a next-review date.
+                  Without a fallback that produces rows reading "Not tracked / Not tracked / TBD /
+                  TBD", which reads as an unmaintained schedule when in
+                  fact the topic simply has not been revisited yet. A topic with no recorded
+                  review history has not slipped, so where original or last due
+                  date is absent, blank or a placeholder, it resolves to
+                  the CURRENT due date and the corresponding delay
+                  computes as 0.
+
+                  Two limits on that. A real, explicitly stated original
+                  or last due date is always shown as given and never
+                  overwritten - the fallback fills gaps, it does not
+                  normalise data. And where the CURRENT due date is
+                  itself absent or a placeholder there is nothing to
+                  anchor to: all three date cells print whatever the data
+                  actually says and both delay cells stay TBD, because a
+                  0 there would assert a schedule the source never
+                  recorded.
+
+                  Delays are always computed here, never read from the
+                  data: (current - last) and (current - original) in
+                  days. #}
+              {%- set cur_serial  = date_serial(m.next_review) | trim %}
+              {%- set orig_serial = date_serial(m.first_covered) | trim %}
+              {%- set last_serial = date_serial(m.last_reviewed) | trim %}
+              {%- set orig_shown = (m.first_covered if orig_serial else m.next_review) if cur_serial else m.first_covered %}
+              {%- set last_shown = (m.last_reviewed if last_serial else m.next_review) if cur_serial else m.last_reviewed %}
+              {%- set delay_orig = ((cur_serial | int) - ((orig_serial or cur_serial) | int)) if cur_serial else none %}
+              {%- set delay_last = ((cur_serial | int) - ((last_serial or cur_serial) | int)) if cur_serial else none %}
+              <tr>
+                <td class="col-id num">{{ m.id }}</td>
+                <td class="col-topic topic-cell">{{ m.topic }}</td>
+                <td class="col-lead">{{ m.source }}</td>
+                <td class="col-status"><span class="status-text {{ status_class(m.status) }}">{{ m.status }}</span></td>
+                <td class="col-origdue">{{ orig_shown }}</td>
+                <td class="col-lastdue">{{ last_shown }}</td>
+                <td class="col-currdue">{{ m.next_review }}</td>
+                {{ delay_cell('col-delaylast', delay_last) }}
+                {{ delay_cell('col-delayorig', delay_orig) }}
+                <td class="col-deliv">{{ m.resource }}</td>
+              </tr>
+              {%- endfor %}
+            {%- else %}
+              <!-- Empty topics list: one placeholder row, every
+                   field "TBD", status "Not started". Both delay cells are
+                   explicitly TBD - there is no current due date here to
+                   anchor the fallback to, which is the same rule the
+                   topic loop applies, stated directly because this
+                   row has no data to run it against. -->
+              <tr>
+                <td class="col-id num">TBD</td>
+                <td class="col-topic topic-cell">TBD</td>
+                <td class="col-lead">TBD</td>
+                <td class="col-status"><span class="status-text status-Not-started">Not started</span></td>
+                <td class="col-origdue">TBD</td>
+                <td class="col-lastdue">TBD</td>
+                <td class="col-currdue">TBD</td>
+                {{ delay_cell('col-delaylast', none) }}
+                {{ delay_cell('col-delayorig', none) }}
+                <td class="col-deliv">TBD</td>
+              </tr>
+            {%- endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- LOCKED CHROME -->
+      {%- if footnote or truncated_count > 0 %}
+      <div class="footnotes">
+        {%- if footnote %}
+        <p class="footnote-line">{{ footnote }}</p>
+        {%- endif %}
+        {%- if truncated_count > 0 %}
+        <p class="footnote-line">[{{ truncated_count }} additional topic{{ 's' if truncated_count != 1 else '' }} not shown, see full tracker]</p>
+        {%- endif %}
+      </div>
+      {%- endif %}
+      <!-- END LOCKED CHROME -->
+    </div>
+
+    <!-- LOCKED CHROME -->
+    <div class="footer-bar">
+      <span class="footer-label">Study Guide</span>
+      <span class="footer-pg">{{ page_number }}</span>
+    </div>
+    <!-- END LOCKED CHROME -->
+  </div>
+</body>
+</html>

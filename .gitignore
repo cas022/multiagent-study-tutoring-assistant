@@ -1,0 +1,24 @@
+# Python build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Scratch space: intermediate working files, never deliverables
+orch/cache_memory/*
+!orch/cache_memory/.gitkeep
+
+# Indexed course material is the student's own and is not committed.
+# The index itself ships empty so the structure is visible.
+ctx/documents/*
+!ctx/documents/.gitkeep
+
+# OS noise
+.DS_Store
+Thumbs.db
+.probe
+
+# API keys and local config never belong in the repo
+.env
+*.local.json

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --deck-deep:     #9E6474;
+  --deck-deep-tab: #B98292;
+  --deck-accent:     #D98F98;
+  --deck-key-msg:  #635054;
+  --deck-footnote: #B29AA0;
+  --deck-card-head:#F8EDEF;
+  --slate-200:     #F0DFE2;
+  --slate-100:     #FBF2F3;
+  --ink-700:       #5F4E53;
+  --font-deck:     'Montserrat', 'Hanken Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+html, body { margin: 0; }
+
+.slide {
+  width: 1280px; height: 720px; position: relative; overflow: hidden;
+  background: #fff; color: var(--ink-700); font-family: var(--font-deck);
+  padding: 42px 56px 52px; box-sizing: border-box;
+  display: flex; flex-direction: column;
+}
+
+/* Left-edge accent tab */
+.tab {
+  position: absolute; left: 0; top: 46px;
+  width: 30px; height: 36px;
+  background: var(--deck-deep-tab);
+  border-radius: 0 6px 6px 0;
+}
+
+/* Logo - position from slide top-left corner (PowerPoint spec: 11.74" × 0.28", 1.25" × 0.42") */
+.logo {
+  position: absolute;
+  left: 1127px; /* 11.74" × 96 dpi */
+  top: 27px;    /* 0.28" × 96 dpi */
+  z-index: 3;
+}
+.logo img { width: 120px; height: 40px; display: block; } /* 1.25" × 0.42" */
+
+h1 {
+  margin: 0;
+  font-family: var(--font-deck);
+  font-weight: 700; font-size: 26px;
+  letter-spacing: .04em; text-transform: uppercase;
+  color: var(--deck-deep);
+}
+
+.keymsg {
+  margin: 7px 0 0;
+  font-weight: 500; font-size: 15px;
+  color: var(--deck-key-msg);
+}
+
+.hr {
+  margin: 16px 0 0;
+  height: 1px; background: var(--slate-200);
+}
+
+.grid {
+  margin-top: 18px; flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 16px 28px;
+  min-height: 0;
+}
+
+.quad { display: flex; flex-direction: column; min-height: 0; }
+
+/* Quadrant title - plain text with bottom separator line (no filled box) */
+.titlebar {
+  padding: 4px 0 7px;
+  font-weight: 700; font-size: 13px;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--deck-deep);
+  border-bottom: 1px solid var(--slate-200);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.body {
+  padding: 11px 2px 0;
+  font-size: 13px; line-height: 1.5;
+  overflow: hidden; flex: 1; min-height: 0;
+}
+
+/* Bullet list */
+ul { margin: 0; padding: 0; list-style: none; }
+li { position: relative; padding-left: 18px; margin-bottom: 9px; }
+li::before {
+  content: ""; position: absolute; left: 0; top: 7px;
+  width: 6px; height: 6px; background: var(--deck-accent);
+}
+li b { color: var(--deck-deep); font-weight: 700; }
+
+/* Tables - shared */
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+td, th { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--slate-100); }
+th {
+  background: var(--deck-card-head); color: var(--deck-deep);
+  font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; font-size: 11px;
+}
+td.c, th.c { text-align: center; font-variant-numeric: tabular-nums; }
+
+/* Row number column - bold, same color as table text, no fill */
+th.num-h { width: 26px; padding: 4px 5px; text-align: center; }
+td.num {
+  width: 26px; padding: 4px 5px;
+  text-align: center; font-weight: 700; font-size: 12px;
+  color: var(--ink-700);
+}
+
+/* Total row - light grey fill */
+tr.total-row td {
+  background: var(--deck-card-head);
+  font-weight: 700; color: var(--deck-deep);
+  border-top: 1px solid var(--slate-200);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sources & Uses 6-col: divider after 4th child (num + 3 use cols) */
+.su-table td:nth-child(4),
+.su-table th:nth-child(4) { border-right: 1px solid var(--slate-200); }
+
+/* Footnote - the shared footer-note lane. */
+.footnote {
+  /* Footnote lane - in normal flow, never an overlay.
+  
+     This block is a flex sibling of the content wrapper inside .slide,
+     with flex-shrink: 0, so the content zone can only ever use the
+     height left over once this lane has taken its own. Every template
+     in this library previously declared it `position: absolute;
+     bottom: 44px` while the content wrapper ran `flex: 1` all the way
+     down to the slide's bottom padding. That put both in the same
+     vertical band with nothing reserving the lane, and any slide whose
+     content reached the bottom rendered straight through its own
+     footnotes. That is not a density-estimate failure that a better
+     heuristic would have caught: the two boxes were laid out
+     independently and could not see each other. mastery-heatmap.html
+     already did it this way and is the only template that never
+     exhibited the collision, which is what identified the pattern.
+  
+     max-height caps the lane at roughly five lines so a long footnote
+     cannot take the slide over instead. Nothing here is allowed to be
+     clipped silently: verify_render.py measures the real rendered
+     geometry of every slide and fails it rather than shipping content
+     that is present in the markup but invisible on the canvas. */
+  flex-shrink: 0; margin-top: 12px;
+  /* overflow: hidden is what makes max-height a real cap rather
+     than a suggestion. Without it the lane simply grows past the
+     cap and paints over the footer bar, which is the same defect
+     this whole change set exists to remove, moved down 40px.
+     With it, an oversized footnote block is caught as clipped
+     content by verify_render.py, which then steps the footnote
+     type down until every note fits. */
+  overflow: hidden;
+  max-height: 74px;
+  font-size: 10px; color: var(--deck-footnote); line-height: 1.4;
+}
+
+/* Dark footer bar with gold top rule */
+.footer-bar {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 38px; background: var(--deck-deep);
+  border-top: 2px solid var(--deck-accent);
+  display: flex; align-items: center;
+  padding: 0 56px; justify-content: space-between;
+}
+.footer-label {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: .18em; text-transform: uppercase;
+  color: rgba(255,255,255,.82);
+}
+.footer-pg {
+  font-size: 12px; font-weight: 700;
+  color: #fff; letter-spacing: .05em;
+}
+
+/* Definition list - used by content_type "definitions". Term and meaning
+   sit on their own lines rather than side by side: a two-column dl at this
+   quad width truncates any meaning longer than a few words. */
+.defs { margin: 0; }
+.defs dt {
+  font-size: 12.5px; font-weight: 700; color: var(--deck-deep); line-height: 1.35;
+}
+.defs dd {
+  margin: 0 0 7px; font-size: 11.5px; line-height: 1.4; color: var(--ink-700);
+}
+.defs dd:last-child { margin-bottom: 0; }
+</style>
+</head>
+<body>
+  <div class="slide">
+    <span class="tab"></span>
+
+    <div class="logo">
+</div>
+
+    <h1>{{ title }}</h1>
+    <p class="keymsg">{{ key_message }}</p>
+    <div class="hr"></div>
+
+    <div class="grid">
+      {% for quad in quads %}
+      <div class="quad">
+        <div class="titlebar">{{ quad.title }}</div>
+        <div class="body">
+
+          {% if quad.content_type == "bullets" %}
+          <ul>
+            {% for bullet in quad.bullets %}
+            <li>{{ bullet | safe }}</li>
+            {% endfor %}
+          </ul>
+
+          {% elif quad.content_type == "table" %}
+          <table>
+            <tr>
+              <th class="num-h"></th>
+              {% for header in quad.table_headers %}
+              <th{% if not loop.first %} class="c"{% endif %}>{{ header }}</th>
+              {% endfor %}
+            </tr>
+            {% for row in quad.table_rows %}
+            <tr>
+              <td class="num">{{ loop.index }}</td>
+              {% for cell in row %}
+              <td{% if not loop.first %} class="c"{% endif %}>{{ cell | safe }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+            {% if quad.table_total %}
+            <tr class="total-row">
+              <td class="num"></td>
+              {% for cell in quad.table_total %}
+              <td{% if not loop.first %} class="c"{% endif %}>{{ cell }}</td>
+              {% endfor %}
+            </tr>
+            {% endif %}
+          </table>
+
+          {% elif quad.content_type == "definitions" %}
+          {# Term/meaning pairs. The term carries the visual weight because
+             a student scanning this quad is looking up a word, not reading
+             a paragraph. #}
+          <dl class="defs">
+            {% for d in quad.definitions %}
+            <dt>{{ d.term }}</dt>
+            <dd>{{ d.meaning | safe }}</dd>
+            {% endfor %}
+          </dl>
+
+          {% endif %}
+
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if footnote %}
+    <div class="footnote">{{ footnote }}</div>
+    {% endif %}
+
+    <div class="footer-bar">
+      <span class="footer-label">Study Guide</span>
+      <span class="footer-pg">{{ page_number }}</span>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "study-guide-generator",
+  "version": "1.0.0",
+  "description": "Study Guide Generator agent for the Multiagent Study & Tutoring Assistant. Builds a study guide deck in two stages: outline (a conceptual pass that also names what it could not fill, and the pipeline's one human checkpoint) and build (validate, render, preview, export, in one call). Ships 13 slide templates, a Pydantic model per template, deterministic render-fit measurement, and a native .pptx exporter. Never reads the document index and never fetches anything itself.",
+  "author": {
+    "name": "Camila Serrano"
+  },
+  "keywords": [
+    "study-guide",
+    "slides",
+    "pptx",
+    "education",
+    "jinja2",
+    "rendering"
+  ]
+}

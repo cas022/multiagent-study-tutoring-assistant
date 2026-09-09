@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --deck-deep:     #9E6474;
+  --deck-deep-tab: #B98292;
+  --deck-accent:   #D98F98;
+  --deck-key-msg:  #635054;
+  --deck-footnote: #B29AA0;
+  --slate-200:     #F0DFE2;
+  --slate-050:     #FDF8F8;
+  --ink-700:       #5F4E53;
+  --kind-given:    #A1C9D0;
+  --kind-step:     #D98F98;
+  --kind-result:   #9E6474;
+  --font-deck:     'Montserrat', 'Hanken Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+html, body { margin: 0; }
+
+.slide {
+  width: 1280px; height: 720px; position: relative; overflow: hidden;
+  background: #fff; color: var(--ink-700); font-family: var(--font-deck);
+  padding: 42px 56px 52px; box-sizing: border-box;
+  display: flex; flex-direction: column;
+}
+
+/* LOCKED CHROME - identical geometry to every other template in this
+   library. Do not restyle here; a divergence shows up immediately when
+   slides are viewed in sequence. */
+.tab { position: absolute; left: 0; top: 46px; width: 30px; height: 36px;
+       background: var(--deck-deep-tab); border-radius: 0 6px 6px 0; }
+h1 { margin: 0; font-family: var(--font-deck); font-weight: 700; font-size: 26px;
+     letter-spacing: .04em; text-transform: uppercase; color: var(--deck-deep); }
+.keymsg { margin: 7px 0 0; font-weight: 500; font-size: 15px; color: var(--deck-key-msg); }
+.hr { margin: 16px 0 0; height: 1px; background: var(--slate-200); flex-shrink: 0; }
+.content-zone { margin-top: 18px; flex: 1; min-height: 0; overflow: hidden;
+                display: flex; gap: 34px; }
+/* One section alone would otherwise stretch the chips across the full
+   canvas width while the step text stayed in a narrow left column. Capping
+   and centring it reads as a deliberate column rather than an empty slide. */
+.content-zone.single { justify-content: center; }
+.content-zone.single .section { max-width: 880px; }
+
+/* One column per section. Two sections halve the horizontal budget, which
+   is why the capacity note caps steps at 4 to 6 each in that case. */
+.section { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.section-title {
+  font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--deck-deep-tab); margin-bottom: 10px; flex-shrink: 0;
+}
+
+/* Terminal chips: the given at the top, the result at the bottom. They are
+   visually heavier than the steps between them because they are what the
+   student is starting from and arriving at. */
+.chip {
+  border-radius: 4px; padding: 9px 14px; font-size: 12.5px; font-weight: 700;
+  color: #fff; flex-shrink: 0;
+}
+.chip-start { background: var(--deck-deep); }
+.chip-end   { background: var(--deck-accent); }
+
+/* The rail is the vertical line the step markers sit on. It runs the full
+   height of the step list so the chain reads as continuous. */
+.steps { position: relative; flex: 1; min-height: 0; padding: 12px 0 12px 0;
+         display: flex; flex-direction: column; justify-content: space-evenly; }
+.steps::before {
+  content: ""; position: absolute; left: 13px; top: 0; bottom: 0;
+  width: 2px; background: var(--slate-200);
+}
+
+.step { position: relative; padding-left: 40px; z-index: 1; }
+.step + .step { margin-top: 8px; }
+.step.subsection { margin-top: 14px; }
+
+.marker {
+  position: absolute; left: 0; top: 1px;
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11.5px; font-weight: 700; color: #fff;
+  background: var(--kind-step); border: 3px solid #fff;
+}
+.kind-given  .marker { background: var(--kind-given); }
+.kind-result .marker { background: var(--kind-result); }
+
+.step-name   { font-size: 13px; font-weight: 700; color: var(--deck-deep); line-height: 1.35; }
+.step-detail { font-size: 11.5px; line-height: 1.4; color: var(--ink-700); margin-top: 2px; }
+
+.footnote { flex-shrink: 0; margin-top: 12px; overflow: hidden; max-height: 74px;
+            font-size: 10px; color: var(--deck-footnote); line-height: 1.4; }
+.footnote-line { margin: 0 0 3px; }
+.fnwrap { column-gap: 26px; }
+
+.page-num { position: absolute; right: 56px; bottom: 22px;
+            font-size: 10px; color: var(--deck-footnote); }
+</style>
+</head>
+<body>
+  <div class="slide">
+
+    <!-- LOCKED CHROME -->
+    <span class="tab"></span>
+    <h1>{{ title }}</h1>
+    <p class="keymsg">{{ key_message }}</p>
+    <div class="hr"></div>
+    <!-- END LOCKED CHROME -->
+
+    <div class="content-zone{{ ' single' if sections | length == 1 else '' }}">
+      {%- for s in sections %}
+      <div class="section">
+        <div class="section-title">{{ s.section_title }}</div>
+        <div class="chip chip-start">{{ s.start_label }}</div>
+
+        <div class="steps">
+          {%- for step in s.steps %}
+          {#- Marker text follows the section's own marker_style: numeric
+              for an ordered procedure, alpha where the steps are named
+              cases rather than a sequence. #}
+          <div class="step kind-{{ step.kind }}{{ ' subsection' if step.starts_subsection else '' }}">
+            <span class="marker">
+              {%- if s.marker_style == 'alpha' -%}
+                {{ 'abcdefghijklmnopqrstuvwxyz'[loop.index0] | upper }}
+              {%- else -%}
+                {{ loop.index }}
+              {%- endif -%}
+            </span>
+            <div class="step-name">{{ step.name }}</div>
+            {%- if step.detail %}
+            <div class="step-detail">{{ step.detail }}</div>
+            {%- endif %}
+          </div>
+          {%- endfor %}
+        </div>
+
+        <div class="chip chip-end">{{ s.end_label }}</div>
+      </div>
+      {%- endfor %}
+    </div>
+
+    {%- if footnotes %}
+    <div class="footnote">
+      {%- set fn_cols = 2 if footnotes | length >= 3 else 1 %}
+      <div class="fnwrap" style="column-count: {{ fn_cols }};">
+        {%- for f in footnotes %}
+        <p class="footnote-line">{{ f }}</p>
+        {%- endfor %}
+      </div>
+    </div>
+    {%- endif %}
+
+    <div class="page-num">{{ page_number }}</div>
+  </div>
+</body>
+</html>
