@@ -105,8 +105,23 @@ def _plain(value) -> str:
     return "\n".join(ln for ln in lines if ln)
 
 
+def _emu(v):
+    """Coerce a computed dimension to integer EMU.
+
+    `Length / int` returns a float in Python 3, so every width computed by
+    dividing the body across columns arrives here as a float. OOXML types
+    these coordinates as xsd:long: PowerPoint refuses to open a file with a
+    decimal point in one and offers to "repair" it instead, while
+    LibreOffice parses the float and rounds. That asymmetry is why this
+    survived rendering tests and only failed in the application people
+    actually use, so the coercion lives in the helpers rather than at each
+    call site, where one missed division would reintroduce it.
+    """
+    return Emu(int(round(v)))
+
+
 def _txbox(slide, left, top, width, height):
-    box = slide.shapes.add_textbox(left, top, width, height)
+    box = slide.shapes.add_textbox(_emu(left), _emu(top), _emu(width), _emu(height))
     tf = box.text_frame
     tf.word_wrap = True
     tf.margin_left = tf.margin_right = Emu(0)
@@ -135,7 +150,8 @@ def _para(tf, text, size, color, bold=False, space_after=4, first=False,
 
 def _rect(slide, left, top, width, height, fill=None, line=None):
     from pptx.enum.shapes import MSO_SHAPE
-    shp = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, width, height)
+    shp = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE,
+                                 _emu(left), _emu(top), _emu(width), _emu(height))
     if fill is None:
         shp.fill.background()
     else:
@@ -197,13 +213,14 @@ def _table(slide, left, top, width, headers, rows, col_widths=None):
     n_rows = len(rows) + 1
     n_cols = len(headers)
     height = Inches(0.28) * n_rows
-    shape = slide.shapes.add_table(n_rows, n_cols, left, top, width, height)
+    shape = slide.shapes.add_table(n_rows, n_cols,
+                                   _emu(left), _emu(top), _emu(width), _emu(height))
     tbl = shape.table
 
     if col_widths and len(col_widths) == n_cols:
         total = float(sum(col_widths)) or 1.0
         for i, w in enumerate(col_widths):
-            tbl.columns[i].width = Emu(int(width * (w / total)))
+            tbl.columns[i].width = _emu(width * (w / total))
 
     tbl.first_row = True
     for c, h in enumerate(headers):
