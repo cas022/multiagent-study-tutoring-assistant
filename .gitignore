@@ -22,3 +22,7 @@ Thumbs.db
 # API keys and local config never belong in the repo
 .env
 *.local.json
+
+# Local run artifacts, not part of the project
+Claude outputs/
+*.zip
